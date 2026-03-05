@@ -518,7 +518,7 @@ with tab2:
             x=hz_prs["ehsyear"], y=(hz_prs["rate"] * 100).round(1),
             line=dict(color=C["pink"], width=2), mode="lines+markers",
             marker=dict(size=7),
-            hovertemplate="%{x}: %{y:.1f}%<extra>Cat 1 Hazard rate</extra>"))
+            hovertemplate="%{x}: %{y:.1f}%<extra></extra>))
         fig_hz.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             yaxis=dict(ticksuffix="%", rangemode="tozero"), showlegend=False)
@@ -566,7 +566,7 @@ with tab2:
             fig_stay.add_trace(go.Bar(
                 x=los["ehsyear"], y=(los[col_key] * 100).round(1),
                 name=label, marker_color=color,
-                hovertemplate=f"%{{x}}: %{{y:.1f}}%<extra>{label}</extra>"))
+                hovertemplate=f"%{{x}}: %{{y:.1f}}%<extra></extra>"))
         fig_stay.update_layout(barmode="stack", height=270,
             margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
@@ -609,7 +609,7 @@ with tab2:
         fig_ev.add_trace(go.Bar(
             x=eviction_df["Year"], y=eviction_df["Cases"],
             marker_color=C["yellow"],
-            hovertemplate="%{x}: %{y:.0f}<extra>Cases</extra>"))
+            hovertemplate="%{x}: %{y:.0f}%<extra></extra>"))
         fig_ev.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"], showlegend=False)
         fig_ev.update_xaxes(showgrid=False)
