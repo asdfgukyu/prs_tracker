@@ -289,11 +289,11 @@ with tab1:
 
     k1, k2, k3= st.columns(3)
     for col, title, val, sub, accent in [
-        (k1, "Avg. Asking Rent (London)",  f"£{int(latest_rent):,}",    f"HomeLet — {rent_date}",       C["blue"]),
+        (k1, "Avg. Asking Rent",  f"£{int(latest_rent):,}",    f"HomeLet — {rent_date}",       C["blue"]),
         (k2, "New Listings (14 days)",      f"{latest_listings:,}",      f"Rightmove — {listings_date}", C["lightblue"]),
         # (k3, "RICS Landlord Sentiment",     f"{latest_rics:.0f}",        f"RICS — {rics_q}",             C["pink"]),
         # (k4, "Homeless Prevention Cases",   f"{latest_homeless:,}",      f"{homeless_q}",                C["purple"]),
-        (k3, "Annual Rent Change (London)", f"{latest_pipr:+.1f}%",      f"ONS PIPR — {pipr_date}",      C["green"]),
+        (k3, "Annual Rent Change", f"{latest_pipr:+.1f}%",      f"ONS PIPR — {pipr_date}",      C["green"]),
     ]:
         with col:
             st.markdown(f"""
@@ -479,7 +479,7 @@ with tab2:
     k1, k2, k3, k4,  = st.columns(4)
     for col, title, val, sub, accent in [
         (k1, "Proportion of households in PRS", f"{prs_share:.1%}",             f"EHS {prs_year}",             C["purple"]),
-        (k2, "PRS Households living in Cat 1 Hazards homes", f"{hz_latest_rate:.1%}",        f"EHS {hz_latest_year}",       C["pink"]),
+        (k2, "PRS households in Cat 1 hazards homes", f"{hz_latest_rate:.1%}",        f"EHS {hz_latest_year}",       C["pink"]),
         # (k3, "Illegal Eviction Cases",      str(eviction_latest),           f"Met Police {eviction_year}", C["yellow"]),
         (k3, "Guarantor/Advance Required", f"{guar_pct:.0%}",              "EPLS 2024",           C["green"]),
         (k4, "Landlord type — Individual", f"{lt['pct'].iloc[0]:.0%}",     "EPLS 2024",                    C["yellow"]),
