@@ -248,11 +248,10 @@ def add_reference_lines_date(fig):
     _vline(fig, ACT_DATE,    "Act in force May 2026",  C["grey"],    y_label=0.80)
 
 
-def add_reference_lines_quarter(fig):
-    """For charts where x-axis uses quarter strings like '2025 Q4'."""
-    _vline(fig, "2025 Q4", "Royal Assent Oct 2025", C["grey"], y_label=0.97)
-    _vline(fig, "2026 Q2", "Act in force May 2026",  C["grey"],    y_label=0.80)
-
+# def add_reference_lines_quarter(fig):
+#     """For charts where x-axis uses quarter strings like '2025 Q4'."""
+#     _vline(fig, "2025 Q4", "Royal Assent Oct 2025", C["grey"], y_label=0.97)
+#     _vline(fig, "2026 Q2", "Act in force May 2026",  C["grey"],    y_label=0.80)
 
 # ── Header ───────────────────────────────────────────────────────
 st.markdown(f"""
@@ -353,8 +352,8 @@ with tab1:
                 name=series, line=dict(color=color, width=2)))
         fig2.add_hline(y=0, line=dict(color=C["black"], width=1))
         for x_pos, label, color, y_label in [
-            (assent_x, "Royal Assent Oct 2025", C["lightblue"], 0.97),
-            (act_x,    "Act in force May 2026",  C["yellow"],    0.80),
+            (assent_x, "Royal Assent Oct 2025", C["grey"], 0.97),
+            (act_x,    "Act in force May 2026",  C["grey"], 0.80),
         ]:
             fig2.add_shape(type="line", x0=x_pos, x1=x_pos, y0=0, y1=1,
                            xref="x", yref="paper",
