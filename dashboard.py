@@ -57,7 +57,6 @@ def load_all_data(path):
     xl = pd.read_excel(path, sheet_name=None, header=None)
 
     # ── HomeLet Rental Index ─────────────────────────────────────
-    # Row 6 = "Date / UK / Greater London …" header; row 7+ = data
     hom = xl["Homelet Rental Index"].iloc[7:].copy()
     hom.columns = ["_drop", "Date", "UK", "Greater London", "UK change", "London change"]
     hom = hom.dropna(subset=["Date"])
@@ -65,14 +64,12 @@ def load_all_data(path):
     hom = hom.dropna(subset=["Date"]).sort_values("Date").reset_index(drop=True)
     for c in ["Greater London", "UK", "UK change", "London change"]:
         hom[c] = pd.to_numeric(hom[c], errors="coerce")
-    # Change series only available from mid-2015; drop NaN rows for change chart
     hom_change = hom.dropna(subset=["UK change", "London change"]).copy()
-    hom_change = hom_change[hom_change["Date"] >= "2019" "-01-01"].reset_index(drop=True)
-    hom_change["UK change"] = hom_change["UK change"] * 100      # convert to %
+    hom_change = hom_change[hom_change["Date"] >= "2019-01-01"].reset_index(drop=True)
+    hom_change["UK change"] = hom_change["UK change"] * 100
     hom_change["London change"] = hom_change["London change"] * 100
 
     # ── Rightmove rental supply (14-day listings) ────────────────
-    # Row 6 = "To rent / To buy" spans; row 7 = column headers; row 8+ = data
     rm = xl["Rental supply rightmove"].iloc[8:].copy()
     rm.columns = ["_drop", "Date", "Day", "24h", "7d", "14d", "Any",
                   "24h_b", "7d_b", "14d_b", "Any_b"]
@@ -83,7 +80,6 @@ def load_all_data(path):
     rm_14d = rm.dropna(subset=["14d"])[["Date", "14d"]].copy()
 
     # ── ONS PIPR annual change (London) ──────────────────────────
-    # Row 6 = header row ("Date / Barking and Dagenham / … / London …"); row 7+ = data
     pipr_df = xl["PIPR Annual change"]
     pipr_headers = pipr_df.iloc[6].tolist()
     pipr = pipr_df.iloc[7:].copy()
@@ -94,7 +90,6 @@ def load_all_data(path):
     pipr["London"] = pd.to_numeric(pipr["London"], errors="coerce")
 
     # ── Homeless prevention duty ──────────────────────────────────
-    # Row 6 = header; row 7+ = data
     hp = xl["Homeless prevention duty"].iloc[7:].copy()
     hp.columns = ["_drop", "Date", "Region", "Rent arrears", "Sell property",
                   "Re-let property", "Retire", "Disrepair complaint",
@@ -110,16 +105,14 @@ def load_all_data(path):
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
 
     # ── Rightmove Rental Price Tracker (annual % change) ─────────
-    # Row 6 = header; row 7+ = data
     rm_tracker = xl["Rightmove Rental Price Tracker"].iloc[7:].copy()
     rm_tracker.columns = ["_drop", "Quarter", "London", "Inner London",
                           "Outer London", "Rest of Britain"]
     rm_tracker = rm_tracker.dropna(subset=["Quarter"]).reset_index(drop=True)
     for c in ["London", "Inner London", "Outer London", "Rest of Britain"]:
-        rm_tracker[c] = pd.to_numeric(rm_tracker[c], errors="coerce") * 100  # convert to %
+        rm_tracker[c] = pd.to_numeric(rm_tracker[c], errors="coerce") * 100
 
     # ── RICS landlord instructions ────────────────────────────────
-    # Row 7 = column headers; row 8+ = data
     rics = xl["RICS rental sentiment"].iloc[8:].copy()
     rics.columns = ["_drop", "Quarter", "Tenant demand EW", "Tenant demand London",
                     "Landlord instr EW", "Landlord instr London"]
@@ -129,9 +122,7 @@ def load_all_data(path):
         rics[c] = pd.to_numeric(rics[c], errors="coerce")
     rics = rics[rics["Quarter"].str[:4] >= "2019"].reset_index(drop=True)
 
-
     # ── Met Police illegal evictions (annual totals) ──────────────
-    # Row 5 = header; row 6+ = data (last row = Grand Total)
     ev = xl["Met Illegal eviction"].iloc[6:].copy()
     ev.columns = ["_drop", "Borough", "2019", "2020", "2021", "2022", "2023"]
     ev = ev.dropna(subset=["Borough"]).reset_index(drop=True)
@@ -143,7 +134,6 @@ def load_all_data(path):
     })
 
     # ── Category 1 hazard (PRS, London) ──────────────────────────
-    # Row 5 = header; row 6+ = data
     hz = xl["Category 1 hazard"].iloc[6:].copy()
     hz.columns = ["_drop", "ehsyear", "london", "tenure3", "not_cat1", "cat1", "rate"]
     hz = hz.dropna(subset=["ehsyear"]).reset_index(drop=True)
@@ -152,7 +142,6 @@ def load_all_data(path):
     hz_prs["ehsyear"] = hz_prs["ehsyear"].astype(int).astype(str)
 
     # ── Landlord type (EPLS 2024) ─────────────────────────────────
-    # Row 5 = header; row 6+ = data
     lt = xl["Landlord type"].iloc[6:].copy()
     lt.columns = ["_drop", "Type", "n", "pct"]
     lt = lt.dropna(subset=["Type"]).reset_index(drop=True)
@@ -177,7 +166,6 @@ def load_all_data(path):
     guar["pct"] = pd.to_numeric(guar["pct"], errors="coerce")
 
     # ── Households in PRS (EHS, London rates) ────────────────────
-    # Rate section: header at row 7, data rows 8-23
     hh_df = xl["Households in PRS"]
     hh = hh_df.iloc[8:24].copy()
     hh.columns = ["_drop", "ehsyear", "owners", "social", "prs"]
@@ -188,7 +176,6 @@ def load_all_data(path):
     hh["ehsyear"] = hh["ehsyear"].astype(int).astype(str)
 
     # ── Length of stay (private renters, London) ──────────────────
-    # Row 7 = header; rows 8-19 = annual data (single-year, not rolling)
     los_df = xl["Length of stay"]
     los = los_df.iloc[8:20].copy()
     los.columns = ["_drop", "ehsyear", "0-1yr", "2yr", "3-4yr", "5-9yr", "10+yr",
@@ -228,8 +215,8 @@ guar_pct         = guar[guar["ReqGuaRent"].isin([
     "Both"
 ])]["pct"].sum()
 
-ACT_DATE       = "2026-05-01"   # Act in force — May 2026
-ASSENT_DATE    = "2025-10-01"   # Royal Assent — Oct 2025
+ACT_DATE     = "2026-05-01"
+ASSENT_DATE  = "2025-10-01"
 
 
 def _vline(fig, x, label, color, y_label=0.97):
@@ -243,15 +230,9 @@ def _vline(fig, x, label, color, y_label=0.97):
 
 
 def add_reference_lines_date(fig):
-    """For charts whose x-axis is a datetime / date string (ISO format)."""
     _vline(fig, ASSENT_DATE, "Royal Assent Oct 2025", C["grey"], y_label=0.97)
-    _vline(fig, ACT_DATE,    "Act in force May 2026",  C["grey"],    y_label=0.80)
+    _vline(fig, ACT_DATE,    "Act in force May 2026",  C["grey"], y_label=0.80)
 
-
-# def add_reference_lines_quarter(fig):
-#     """For charts where x-axis uses quarter strings like '2025 Q4'."""
-#     _vline(fig, "2025 Q4", "Royal Assent Oct 2025", C["grey"], y_label=0.97)
-#     _vline(fig, "2026 Q2", "Act in force May 2026",  C["grey"],    y_label=0.80)
 
 # ── Header ───────────────────────────────────────────────────────
 st.markdown(f"""
@@ -290,13 +271,11 @@ with tab1:
         unsafe_allow_html=True
     )
 
-    k1, k2, k3= st.columns(3)
+    k1, k2, k3 = st.columns(3)
     for col, title, val, sub, accent in [
-        (k1, "Avg. Asking Rent",  f"£{int(latest_rent):,}",    f"HomeLet — {rent_date}",       C["blue"]),
-        (k2, "New Listings (14 days)",      f"{latest_listings:,}",      f"Rightmove — {listings_date}", C["lightblue"]),
-        # (k3, "RICS Landlord Sentiment",     f"{latest_rics:.0f}",        f"RICS — {rics_q}",             C["pink"]),
-        # (k4, "Homeless Prevention Cases",   f"{latest_homeless:,}",      f"{homeless_q}",                C["purple"]),
-        (k3, "Annual Rent Change", f"{latest_pipr:+.1f}%",      f"ONS PIPR — {pipr_date}",      C["green"]),
+        (k1, "Avg. Asking Rent",       f"£{int(latest_rent):,}",  f"HomeLet — {rent_date}",       C["blue"]),
+        (k2, "New Listings (14 days)", f"{latest_listings:,}",    f"Rightmove — {listings_date}", C["lightblue"]),
+        (k3, "Annual Rent Change",     f"{latest_pipr:+.1f}%",    f"ONS PIPR — {pipr_date}",      C["green"]),
     ]:
         with col:
             st.markdown(f"""
@@ -313,12 +292,16 @@ with tab1:
     with col1:
         st.markdown("**Annual Rent Change (%)** — HomeLet Rental Index")
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=hom_change["Date"], y=hom_change["London change"],
-            name="London", line=dict(color=C["blue"], width=2)))
-        fig.add_trace(go.Scatter(x=hom_change["Date"], y=hom_change["UK change"],
+        fig.add_trace(go.Scatter(
+            x=hom_change["Date"], y=hom_change["London change"],
+            name="London", line=dict(color=C["blue"], width=2),
+            hovertemplate="%{x|%b %Y}: %{y:.1f}%<extra>London</extra>"))
+        fig.add_trace(go.Scatter(
+            x=hom_change["Date"], y=hom_change["UK change"],
             name="UK", line=dict(color=C["lightblue"], width=2,
             dash="dot" if not eng_toggle else "solid"),
-            visible=True if eng_toggle else "legendonly"))
+            visible=True if eng_toggle else "legendonly",
+            hovertemplate="%{x|%b %Y}: %{y:.1f}%<extra>UK</extra>"))
         fig.add_hline(y=0, line=dict(color=C["black"], width=1))
         add_reference_lines_date(fig)
         fig.update_layout(height=280, margin=dict(l=0, r=0, t=8, b=0),
@@ -338,10 +321,8 @@ with tab1:
         }
         quarters = rm_tracker["Quarter"].tolist()
         x_idx = list(range(len(quarters)))
-        # Royal Assent = Oct 2025 → sits inside Q4 2025, which is index 21
-        # Act in force = May 2026 → ~1.5 quarters beyond last data point
         assent_x = quarters.index("2025 Q4") if "2025 Q4" in quarters else len(quarters) - 1
-        act_x    = len(quarters) - 1 + 1.5   # project beyond last point
+        act_x    = len(quarters) - 1 + 1.5
 
         fig2 = go.Figure()
         for series, color in rm_colors.items():
@@ -349,7 +330,9 @@ with tab1:
                 continue
             fig2.add_trace(go.Scatter(
                 x=x_idx, y=rm_tracker[series].tolist(),
-                name=series, line=dict(color=color, width=2)))
+                name=series, line=dict(color=color, width=2),
+                hovertemplate=f"%{{customdata}}: %{{y:.1f}}%<extra>{series}</extra>",
+                customdata=quarters))
         fig2.add_hline(y=0, line=dict(color=C["black"], width=1))
         for x_pos, label, color, y_label in [
             (assent_x, "Royal Assent Oct 2025", C["grey"], 0.97),
@@ -365,12 +348,8 @@ with tab1:
         fig2.update_layout(height=280, margin=dict(l=0, r=20, t=8, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             yaxis=dict(ticksuffix="%"), legend=dict(font=dict(size=11)),
-            xaxis=dict(
-                tickmode="array",
-                tickvals=x_idx[::4],
-                ticktext=quarters[::4],
-                tickangle=45,
-            ))
+            xaxis=dict(tickmode="array", tickvals=x_idx[::4],
+                       ticktext=quarters[::4], tickangle=45))
         fig2.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
         fig2.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig2, use_container_width=True)
@@ -380,8 +359,10 @@ with tab1:
     with col3:
         st.markdown("**Annual Rent Change (%)** — ONS Price Index of Private Rent")
         fig3 = go.Figure()
-        fig3.add_trace(go.Scatter(x=pipr["Date"], y=pipr["London"],
-            name="London", line=dict(color=C["pink"], width=2)))
+        fig3.add_trace(go.Scatter(
+            x=pipr["Date"], y=pipr["London"],
+            name="London", line=dict(color=C["pink"], width=2),
+            hovertemplate="%{x|%b %Y}: %{y:.1f}%<extra>London</extra>"))
         add_reference_lines_date(fig3)
         fig3.update_layout(height=280, margin=dict(l=0, r=0, t=8, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
@@ -407,31 +388,39 @@ with tab1:
         for (band, label), color in zip(hp_labels.items(), hp_colors):
             fig4.add_trace(go.Bar(
                 x=hp["Quarter"], y=hp[band],
-                name=label, marker_color=color))
-        fig4.update_layout(
-            barmode="stack",
-            height=280, margin=dict(l=0, r=0, t=10, b=0),
+                name=label, marker_color=color,
+                hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label}</extra>"))
+        fig4.update_layout(barmode="stack", height=280,
+            margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
-            legend=dict(font=dict(size=10), orientation="v",
-                        x=1.01, y=1, xanchor="left"))
+            legend=dict(font=dict(size=10), orientation="v", x=1.01, y=1, xanchor="left"))
         fig4.update_xaxes(showgrid=False)
         fig4.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig4, use_container_width=True)
 
     col5, col6 = st.columns(2)
+
     with col5:
         st.markdown("**Tenant Demand & Landlord Instructions** — RICS UK Residential Market Survey")
         rics_plot = rics.dropna(subset=["Landlord instr London"]).copy()
         fig5 = go.Figure()
-        fig5.add_trace(go.Scatter(x=rics_plot["Quarter"], y=rics_plot["Tenant demand London"],
-            name="Tenant demand — London", line=dict(color=C["blue"], width=2)))
-        fig5.add_trace(go.Scatter(x=rics_plot["Quarter"], y=rics_plot["Landlord instr London"],
-            name="Landlord instructions — London", line=dict(color=C["pink"], width=2)))
+        fig5.add_trace(go.Scatter(
+            x=rics_plot["Quarter"], y=rics_plot["Tenant demand London"],
+            name="Tenant demand — London", line=dict(color=C["blue"], width=2),
+            hovertemplate="%{x}: %{y:.1f}<extra>Tenant demand — London</extra>"))
+        fig5.add_trace(go.Scatter(
+            x=rics_plot["Quarter"], y=rics_plot["Landlord instr London"],
+            name="Landlord instructions — London", line=dict(color=C["pink"], width=2),
+            hovertemplate="%{x}: %{y:.1f}<extra>Landlord instructions — London</extra>"))
         if eng_toggle:
-            fig5.add_trace(go.Scatter(x=rics_plot["Quarter"], y=rics_plot["Tenant demand EW"],
-                name="Tenant demand — E&W", line=dict(color=C["lightblue"], width=2, dash="dot")))
-            fig5.add_trace(go.Scatter(x=rics_plot["Quarter"], y=rics_plot["Landlord instr EW"],
-                name="Landlord instr. — E&W", line=dict(color=C["yellow"], width=2, dash="dot")))
+            fig5.add_trace(go.Scatter(
+                x=rics_plot["Quarter"], y=rics_plot["Tenant demand EW"],
+                name="Tenant demand — E&W", line=dict(color=C["lightblue"], width=2, dash="dot"),
+                hovertemplate="%{x}: %{y:.1f}<extra>Tenant demand — E&W</extra>"))
+            fig5.add_trace(go.Scatter(
+                x=rics_plot["Quarter"], y=rics_plot["Landlord instr EW"],
+                name="Landlord instr. — E&W", line=dict(color=C["yellow"], width=2, dash="dot"),
+                hovertemplate="%{x}: %{y:.1f}<extra>Landlord instr. — E&W</extra>"))
         fig5.add_hline(y=0, line=dict(color=C["black"], width=1))
         fig5.update_layout(height=380, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
@@ -444,8 +433,10 @@ with tab1:
     with col6:
         st.markdown("**Rental Listings listed on Rightmove in the last 14 days** — Rightmove via GLA")
         fig6 = go.Figure()
-        fig6.add_trace(go.Scatter(x=rm_14d["Date"], y=rm_14d["14d"],
-            name="London", line=dict(color=C["green"], width=2)))
+        fig6.add_trace(go.Scatter(
+            x=rm_14d["Date"], y=rm_14d["14d"],
+            name="London", line=dict(color=C["green"], width=2),
+            hovertemplate="%{x|%b %Y}: %{y:,.0f}<extra>14-day listings</extra>"))
         add_reference_lines_date(fig6)
         fig6.update_layout(height=380, margin=dict(l=0, r=0, t=8, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
@@ -456,12 +447,12 @@ with tab1:
 
     st.markdown("### Data Table — Market Monitoring")
     monitor_df = pd.DataFrame([
-        ["HomeLet Rental Index",         "Avg. asking rent (London)",        f"£{int(latest_rent):,} pcm", "—", rent_date,     "Monthly"],
-        ["Rightmove Rental Price Tracker", "Annual rent change — London",       f"{rm_tracker['London'].iloc[-1]:+.1f}%",  "—", rm_tracker['Quarter'].iloc[-1], "Quarterly"],
-        ["ONS Price Index of Priv Rent", "Annual rent change (London)",       f"{latest_pipr:+.1f}%",       "—", pipr_date,     "Monthly"],
-        ["RICS",                          "Landlord instr. sentiment (Lon)", f"{latest_rics:.0f}",          "—", rics_q,        "Quarterly"],
-        ["MHCLG Homelessness Stats",     "Prevention duty cases (London)",    f"{latest_homeless:,}",       "—", homeless_q,    "Quarterly"],
-        ["Met Police (FOI)",             "Illegal eviction cases (London)",   str(eviction_latest),          "—", eviction_year, "One-off"],
+        ["HomeLet Rental Index",           "Avg. asking rent (London)",       f"£{int(latest_rent):,} pcm",                 "—", rent_date,                      "Monthly"],
+        ["Rightmove Rental Price Tracker", "Annual rent change — London",     f"{rm_tracker['London'].iloc[-1]:+.1f}%",      "—", rm_tracker["Quarter"].iloc[-1], "Quarterly"],
+        ["ONS Price Index of Priv Rent",   "Annual rent change (London)",     f"{latest_pipr:+.1f}%",                        "—", pipr_date,                      "Monthly"],
+        ["RICS",                           "Landlord instr. sentiment (Lon)", f"{latest_rics:.1f}",                          "—", rics_q,                         "Quarterly"],
+        ["MHCLG Homelessness Stats",       "Prevention duty cases (London)",  f"{latest_homeless:,}",                        "—", homeless_q,                     "Quarterly"],
+        ["Met Police (FOI)",               "Illegal eviction cases (London)", str(eviction_latest),                          "—", eviction_year,                  "One-off"],
     ], columns=["Source", "Metric", "London", "England/UK", "Period", "Frequency"])
     if not eng_toggle:
         monitor_df["England/UK"] = "—"
@@ -479,13 +470,12 @@ with tab2:
         unsafe_allow_html=True
     )
 
-    k1, k2, k3, k4,  = st.columns(4)
+    k1, k2, k3, k4 = st.columns(4)
     for col, title, val, sub, accent in [
-        (k1, "Proportion of households in PRS", f"{prs_share:.1%}",             f"EHS {prs_year}",             C["purple"]),
-        (k2, "PRS households in Cat 1 hazards homes", f"{hz_latest_rate:.1%}",        f"EHS {hz_latest_year}",       C["pink"]),
-        # (k3, "Illegal Eviction Cases",      str(eviction_latest),           f"Met Police {eviction_year}", C["yellow"]),
-        (k3, "Guarantor/Advance required", f"{guar_pct:.0%}",              "EPLS 2024",           C["green"]),
-        (k4, "Landlords with 1 property only", f"{pt['pct'].iloc[0]:.0%}",     "EPLS 2024",                    C["yellow"]),
+        (k1, "Proportion of households in PRS",      f"{prs_share:.1%}",          f"EHS {prs_year}",       C["purple"]),
+        (k2, "PRS households in Cat 1 hazard homes", f"{hz_latest_rate:.1%}",     f"EHS {hz_latest_year}", C["pink"]),
+        (k3, "Guarantor/Advance required",           f"{guar_pct:.0%}",           "EPLS 2024",             C["green"]),
+        (k4, "Landlords with 1 property only",       f"{pt['pct'].iloc[0]:.0%}", "EPLS 2024",              C["yellow"]),
     ]:
         with col:
             st.markdown(f"""
@@ -497,7 +487,6 @@ with tab2:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Row 1: PRS share line (wide) + Cat 1 hazard line (narrow) ─
     col_wide, col_narrow = st.columns([3, 1])
 
     with col_wide:
@@ -511,8 +500,8 @@ with tab2:
             fig_tenure.add_trace(go.Scatter(
                 x=hh["ehsyear"], y=(hh[tenure_col] * 100).round(1),
                 name=label, line=dict(color=color, width=2),
-                mode="lines+markers", marker=dict(size=6)
-            ))
+                mode="lines+markers", marker=dict(size=6),
+                hovertemplate=f"%{{x}}: %{{y:.1f}}%<extra>{label}</extra>"))
         fig_tenure.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             yaxis=dict(ticksuffix="%", rangemode="tozero"),
@@ -528,8 +517,8 @@ with tab2:
         fig_hz.add_trace(go.Scatter(
             x=hz_prs["ehsyear"], y=(hz_prs["rate"] * 100).round(1),
             line=dict(color=C["pink"], width=2), mode="lines+markers",
-            marker=dict(size=7)
-        ))
+            marker=dict(size=7),
+            hovertemplate="%{x}: %{y:.1f}%<extra>Cat 1 Hazard rate</extra>"))
         fig_hz.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             yaxis=dict(ticksuffix="%", rangemode="tozero"), showlegend=False)
@@ -537,14 +526,11 @@ with tab2:
         fig_hz.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig_hz, use_container_width=True)
 
-    # ── Row 2: Guarantor pie charts + Length of stay stacked bar ──
     col_pie, col_stay = st.columns([1, 2])
 
     with col_pie:
         st.markdown("**Guarantor / Advance Required** — English Private Landlord Survey, 2024")
-        # Simplify into three slices: Guarantor only, Rent advance only, Both, Neither
-        guar_labels = ["Guarantor", "Rent advance", "Both", "Neither", "Don't know"]
-        guar_map    = {
+        guar_map = {
             "A guarantor":                               "Guarantor",
             "Rent in advance, in addition to a deposit": "Rent advance",
             "Both":                                      "Both",
@@ -558,12 +544,9 @@ with tab2:
         fig_pie = go.Figure(go.Pie(
             labels=guar_plot["Label"],
             values=(guar_plot["pct"] * 100).round(1),
-            marker=dict(colors=pie_colors,
-                        line=dict(color=C["white"], width=2)),
-            textinfo="label+percent",
-            textfont=dict(size=11),
-            hole=0.35,
-        ))
+            marker=dict(colors=pie_colors, line=dict(color=C["white"], width=2)),
+            textinfo="label+percent", textfont=dict(size=11), hole=0.35,
+            hovertemplate="%{label}: %{value:.1f}%<extra></extra>"))
         fig_pie.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=7),
             paper_bgcolor=C["white"], showlegend=False)
         st.plotly_chart(fig_pie, use_container_width=True)
@@ -581,30 +564,26 @@ with tab2:
         fig_stay = go.Figure()
         for (label, col_key), color in zip(stay_bands.items(), stay_colors):
             fig_stay.add_trace(go.Bar(
-                x=los["ehsyear"],
-                y=(los[col_key] * 100).round(1),
-                name=label,
-                marker_color=color,
-            ))
-        fig_stay.update_layout(
-            barmode="stack",
-            height=270, margin=dict(l=0, r=0, t=10, b=0),
+                x=los["ehsyear"], y=(los[col_key] * 100).round(1),
+                name=label, marker_color=color,
+                hovertemplate=f"%{{x}}: %{{y:.1f}}%<extra>{label}</extra>"))
+        fig_stay.update_layout(barmode="stack", height=270,
+            margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             yaxis=dict(ticksuffix="%", range=[0, 100]),
             legend=dict(font=dict(size=11), orientation="h",
-                yanchor="bottom", y=1.02, xanchor="left", x=0)
-        )
-        fig_stay.update_xaxes(showgrid=False, gridcolor=C["offwhite"])
+                yanchor="bottom", y=1.02, xanchor="left", x=0))
+        fig_stay.update_xaxes(showgrid=False)
         fig_stay.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig_stay, use_container_width=True)
 
-    # ── Row 3: Landlord type + portfolio size + illegal evictions ──
     col1, col2, col3 = st.columns(3)
 
     with col1:
         st.markdown("**Landlord Type** — English Private Landlord Survey, 2024")
         fig_lt = px.bar(lt, x="pct_pct", y="Type_short", orientation="h",
             color_discrete_sequence=[C["blue"]])
+        fig_lt.update_traces(hovertemplate="%{y}: %{x:.1f}%<extra></extra>")
         fig_lt.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             xaxis_ticksuffix="%", showlegend=False, xaxis_title="", yaxis_title="")
@@ -616,6 +595,7 @@ with tab2:
         st.markdown("**Portfolio Size** — English Private Landlord Survey, 2024")
         fig_pt = px.bar(pt, x="pct_pct", y="Size_short", orientation="h",
             color_discrete_sequence=[C["purple"]])
+        fig_pt.update_traces(hovertemplate="%{y}: %{x:.1f}%<extra></extra>")
         fig_pt.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             xaxis_ticksuffix="%", showlegend=False, xaxis_title="", yaxis_title="")
@@ -626,23 +606,24 @@ with tab2:
     with col3:
         st.markdown("**Illegal Eviction Cases** — Met Police")
         fig_ev = go.Figure()
-        fig_ev.add_trace(go.Bar(x=eviction_df["Year"], y=eviction_df["Cases"],
-            marker_color=C["yellow"]))
+        fig_ev.add_trace(go.Bar(
+            x=eviction_df["Year"], y=eviction_df["Cases"],
+            marker_color=C["yellow"],
+            hovertemplate="%{x}: %{y:.0f}<extra>Cases</extra>"))
         fig_ev.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"], showlegend=False)
         fig_ev.update_xaxes(showgrid=False)
         fig_ev.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig_ev, use_container_width=True)
 
-    # ── Data table ────────────────────────────────────────────────
     st.markdown("### Data Table — Sector Context")
     context_df = pd.DataFrame([
-        ["English Housing Survey", "PRS share of stock",           f"{prs_share:.1%}",            "—", prs_year,       "Annual"],
-        ["EPLS 2024",              "Guarantor/advance required",   f"{guar_pct:.0%}",             "—", "2024",         "One-off"],
-        ["EPLS 2024",              "Landlord type — individual",   f"{lt['pct'].iloc[0]:.0%}",    "—", "2024",         "One-off"],
-        ["EPLS 2024",              "Portfolio size — 1 property",  f"{pt['pct'].iloc[0]:.0%}",    "—", "2024",         "One-off"],
-        ["English Housing Survey", "Cat 1 hazard homes (PRS)",     f"{hz_latest_rate:.1%}",       "—", hz_latest_year, "Annual"],
-        ["Met Police",             "Illegal eviction cases",       str(eviction_latest),           "—", eviction_year,  "One-off (FOI)"],
+        ["English Housing Survey", "PRS share of stock",          f"{prs_share:.1%}",          "—", prs_year,       "Annual"],
+        ["EPLS 2024",              "Guarantor/advance required",  f"{guar_pct:.0%}",            "—", "2024",         "One-off"],
+        ["EPLS 2024",              "Landlord type — individual",  f"{lt['pct'].iloc[0]:.0%}",   "—", "2024",         "One-off"],
+        ["EPLS 2024",              "Portfolio size — 1 property", f"{pt['pct'].iloc[0]:.0%}",   "—", "2024",         "One-off"],
+        ["English Housing Survey", "Cat 1 hazard homes (PRS)",    f"{hz_latest_rate:.1%}",      "—", hz_latest_year, "Annual"],
+        ["Met Police",             "Illegal eviction cases",      str(eviction_latest),          "—", eviction_year,  "One-off (FOI)"],
     ], columns=["Source", "Metric", "London", "England", "Year", "Frequency"])
     if not eng_toggle:
         context_df["England"] = "—"
