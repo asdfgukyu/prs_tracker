@@ -378,7 +378,7 @@ with tab1:
     col3, col4 = st.columns(2)
 
     with col3:
-        st.markdown("**Annual Rent Change (%)** — ONS Price Index of Private Rents")
+        st.markdown("**Annual Rent Change (%)** — ONS Price Index of Private Rent")
         fig3 = go.Figure()
         fig3.add_trace(go.Scatter(x=pipr["Date"], y=pipr["London"],
             name="London", line=dict(color=C["pink"], width=2)))
@@ -449,7 +449,7 @@ with tab1:
         add_reference_lines_date(fig6)
         fig6.update_layout(height=380, margin=dict(l=0, r=0, t=8, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
-            showlegend=False, yaxis=dict(ticksuffix="k"))
+            showlegend=False)
         fig6.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
         fig6.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig6, use_container_width=True)
@@ -541,7 +541,7 @@ with tab2:
     col_pie, col_stay = st.columns([1, 2])
 
     with col_pie:
-        st.markdown("**Guarantor / Advance Required** — English Private Landlord Survey 2024")
+        st.markdown("**Guarantor / Advance Required** — English Private Landlord Survey, 2024")
         # Simplify into three slices: Guarantor only, Rent advance only, Both, Neither
         guar_labels = ["Guarantor", "Rent advance", "Both", "Neither", "Don't know"]
         guar_map    = {
@@ -602,7 +602,7 @@ with tab2:
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown("**Landlord Type** — English Private Landlord Survey 2024")
+        st.markdown("**Landlord Type** — English Private Landlord Survey, 2024")
         fig_lt = px.bar(lt, x="pct_pct", y="Type_short", orientation="h",
             color_discrete_sequence=[C["blue"]])
         fig_lt.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
@@ -613,7 +613,7 @@ with tab2:
         st.plotly_chart(fig_lt, use_container_width=True)
 
     with col2:
-        st.markdown("**Portfolio Size** — English Private Landlord Survey 2024")
+        st.markdown("**Portfolio Size** — English Private Landlord Survey, 2024")
         fig_pt = px.bar(pt, x="pct_pct", y="Size_short", orientation="h",
             color_discrete_sequence=[C["purple"]])
         fig_pt.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
