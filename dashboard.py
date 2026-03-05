@@ -254,7 +254,7 @@ def add_reference_lines_quarter(fig):
 st.markdown(f"""
 <div style="background:{C['navy']}; padding:16px 24px; border-radius:8px; margin-bottom:16px;">
   <span style="color:{C['white']}; font-size:20px; font-weight:700;">
-      LondonPrivate Rented Sector Dashboard
+      London Private Rented Sector Dashboard
   </span><br>
   <span style="color:{C['lightblue']}; font-size:13px;">
       Tracking the impact of the Renters' Rights Act — London focus
