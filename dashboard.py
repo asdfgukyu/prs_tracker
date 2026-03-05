@@ -444,7 +444,7 @@ with tab1:
         fig6.add_trace(go.Scatter(x=rm_14d["Date"], y=rm_14d["14d"],
             name="London", line=dict(color=C["green"], width=2)))
         add_reference_lines_date(fig6)
-        fig6.update_layout(height=280, margin=dict(l=0, r=0, t=8, b=0),
+        fig6.update_layout(height=380, margin=dict(l=0, r=0, t=8, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             showlegend=False, yaxis=dict(ticksuffix="k"))
         fig6.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
