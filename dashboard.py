@@ -245,7 +245,7 @@ def add_reference_lines_date(fig):
 
 
 def add_reference_lines_quarter(fig):
-    """For charts whose x-axis uses quarter strings like '2025 Q4'."""
+    """For charts where x-axis uses quarter strings like '2025 Q4'."""
     _vline(fig, "2025 Q4", "Royal Assent Oct 2025", C["lightblue"], y_label=0.97)
     _vline(fig, "2026 Q2", "Act in force May 2026",  C["yellow"],    y_label=0.80)
 
@@ -257,14 +257,14 @@ st.markdown(f"""
       Private Rented Sector Dashboard
   </span><br>
   <span style="color:{C['lightblue']}; font-size:13px;">
-      Tracking the impact of the Renters Rights Act — London focus
+      Tracking the impact of the Renters' Rights Act — London focus
   </span>
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("""
 <div class="act-banner">
-  ⚑ <strong>Renters Rights Act</strong> — Royal Assent granted <strong>October 2025</strong>.
+  ⚑ <strong>Renters' Rights Act</strong> — Royal Assent granted <strong>October 2025</strong>.
   Act comes into force <strong>May 2026</strong>. Charts show reference lines at both points.
 </div>
 """, unsafe_allow_html=True)
