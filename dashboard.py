@@ -561,7 +561,7 @@ with tab2:
             textfont=dict(size=11),
             hole=0.35,
         ))
-        fig_pie.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=0),
+        fig_pie.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=5),
             paper_bgcolor=C["white"], showlegend=False)
         st.plotly_chart(fig_pie, use_container_width=True)
 
