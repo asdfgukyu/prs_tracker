@@ -66,6 +66,7 @@ def load_all_data(path):
         hom[c] = pd.to_numeric(hom[c], errors="coerce")
     # Change series only available from mid-2015; drop NaN rows for change chart
     hom_change = hom.dropna(subset=["UK change", "London change"]).copy()
+    hom_change = hom_change[hom_change["Date"] >= "2019-01-01"].reset_index(drop=True)
     hom_change["UK change"] = hom_change["UK change"] * 100      # convert to %
     hom_change["London change"] = hom_change["London change"] * 100
 
