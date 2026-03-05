@@ -19,7 +19,7 @@ C = {
 
 # ── Page config ─────────────────────────────────────────────────
 st.set_page_config(
-    page_title=" GLA PRS Dashboard — Renters' Rights Act",
+    page_title=" London PRS Dashboard — Renters' Rights Act Impact Tracker",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -254,7 +254,7 @@ def add_reference_lines_quarter(fig):
 st.markdown(f"""
 <div style="background:{C['navy']}; padding:16px 24px; border-radius:8px; margin-bottom:16px;">
   <span style="color:{C['white']}; font-size:20px; font-weight:700;">
-      Private Rented Sector Dashboard
+      LondonPrivate Rented Sector Dashboard
   </span><br>
   <span style="color:{C['lightblue']}; font-size:13px;">
       Tracking the impact of the Renters' Rights Act — London focus
