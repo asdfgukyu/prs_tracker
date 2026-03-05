@@ -15,6 +15,7 @@ C = {
     "green":    "#117733",
     "lightblue":"#8EC8E7",
     "purple":   "#AA4499",
+    "grey":     "#AEAAAA",
 }
 
 # ── Page config ─────────────────────────────────────────────────
@@ -66,7 +67,7 @@ def load_all_data(path):
         hom[c] = pd.to_numeric(hom[c], errors="coerce")
     # Change series only available from mid-2015; drop NaN rows for change chart
     hom_change = hom.dropna(subset=["UK change", "London change"]).copy()
-    hom_change = hom_change[hom_change["Date"] >= "2019-01-01"].reset_index(drop=True)
+    hom_change = hom_change[hom_change["Date"] >= "2019" "-01-01"].reset_index(drop=True)
     hom_change["UK change"] = hom_change["UK change"] * 100      # convert to %
     hom_change["London change"] = hom_change["London change"] * 100
 
@@ -243,14 +244,14 @@ def _vline(fig, x, label, color, y_label=0.97):
 
 def add_reference_lines_date(fig):
     """For charts whose x-axis is a datetime / date string (ISO format)."""
-    _vline(fig, ASSENT_DATE, "Royal Assent Oct 2025", C["lightblue"], y_label=0.97)
-    _vline(fig, ACT_DATE,    "Act in force May 2026",  C["yellow"],    y_label=0.80)
+    _vline(fig, ASSENT_DATE, "Royal Assent Oct 2025", C["grey"], y_label=0.97)
+    _vline(fig, ACT_DATE,    "Act in force May 2026",  C["grey"],    y_label=0.80)
 
 
 def add_reference_lines_quarter(fig):
     """For charts where x-axis uses quarter strings like '2025 Q4'."""
-    _vline(fig, "2025 Q4", "Royal Assent Oct 2025", C["lightblue"], y_label=0.97)
-    _vline(fig, "2026 Q2", "Act in force May 2026",  C["yellow"],    y_label=0.80)
+    _vline(fig, "2025 Q4", "Royal Assent Oct 2025", C["grey"], y_label=0.97)
+    _vline(fig, "2026 Q2", "Act in force May 2026",  C["grey"],    y_label=0.80)
 
 
 # ── Header ───────────────────────────────────────────────────────
