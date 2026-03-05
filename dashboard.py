@@ -367,8 +367,8 @@ with tab1:
             yaxis=dict(ticksuffix="%"), legend=dict(font=dict(size=11)),
             xaxis=dict(
                 tickmode="array",
-                tickvals=x_idx[::2],
-                ticktext=quarters[::2],
+                tickvals=x_idx[::4],
+                ticktext=quarters[::4],
                 tickangle=45,
             ))
         fig2.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
