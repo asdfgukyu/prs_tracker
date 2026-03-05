@@ -19,7 +19,7 @@ C = {
 
 # ── Page config ─────────────────────────────────────────────────
 st.set_page_config(
-    page_title="PRS Dashboard — Renters Rights Act",
+    page_title=" GLA PRS Dashboard — Renters' Rights Act",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
