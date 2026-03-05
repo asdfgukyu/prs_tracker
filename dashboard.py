@@ -518,7 +518,7 @@ with tab2:
             x=hz_prs["ehsyear"], y=(hz_prs["rate"] * 100).round(1),
             line=dict(color=C["pink"], width=2), mode="lines+markers",
             marker=dict(size=7),
-            hovertemplate="%{x}: %{y:.1f}%<extra></extra>))
+            hovertemplate="%{x}: %{y:.1f}%<extra></extra>"))
         fig_hz.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             yaxis=dict(ticksuffix="%", rangemode="tozero"), showlegend=False)
