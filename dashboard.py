@@ -375,7 +375,7 @@ with tab1:
     col3, col4 = st.columns(2)
 
     with col3:
-        st.markdown("**Annual Rent Change (%)** — ONS Price Index of Private Rents, London")
+        st.markdown("**Annual Rent Change (%)** — ONS Price Index of Private Rents")
         fig3 = go.Figure()
         fig3.add_trace(go.Scatter(x=pipr["Date"], y=pipr["London"],
             name="London", line=dict(color=C["pink"], width=2)))
@@ -476,13 +476,13 @@ with tab2:
         unsafe_allow_html=True
     )
 
-    k1, k2, k3, k4, k5 = st.columns(5)
+    k1, k2, k3, k4,  = st.columns(4)
     for col, title, val, sub, accent in [
-        (k1, "PRS Share of Housing Stock", f"{prs_share:.1%}",             f"EHS {prs_year}",             C["purple"]),
-        (k2, "Cat 1 Hazard (PRS, London)", f"{hz_latest_rate:.1%}",        f"EHS {hz_latest_year}",       C["pink"]),
-        (k3, "Illegal Eviction Cases",      str(eviction_latest),           f"Met Police {eviction_year}", C["yellow"]),
-        (k4, "Guarantor/Advance Required", f"{guar_pct:.0%}",              "EPLS 2024 — London",           C["green"]),
-        (k5, "Landlord type — Individual", f"{lt['pct'].iloc[0]:.0%}",     "EPLS 2024",                    C["blue"]),
+        (k1, "Proportion of households in PRS", f"{prs_share:.1%}",             f"EHS {prs_year}",             C["purple"]),
+        (k2, "PRS Households living in Cat 1 Hazards homes", f"{hz_latest_rate:.1%}",        f"EHS {hz_latest_year}",       C["pink"]),
+        # (k3, "Illegal Eviction Cases",      str(eviction_latest),           f"Met Police {eviction_year}", C["yellow"]),
+        (k3, "Guarantor/Advance Required", f"{guar_pct:.0%}",              "EPLS 2024",           C["green"]),
+        (k4, "Landlord type — Individual", f"{lt['pct'].iloc[0]:.0%}",     "EPLS 2024",                    C["yellow"]),
     ]:
         with col:
             st.markdown(f"""
@@ -498,7 +498,7 @@ with tab2:
     col_wide, col_narrow = st.columns([3, 1])
 
     with col_wide:
-        st.markdown("**London Housing Stock by Tenure (%)** — English Housing Survey")
+        st.markdown("** Households by tenure (%)** — English Housing Survey")
         fig_tenure = go.Figure()
         for tenure_col, label, color in [
             ("prs",    "Private renters", C["purple"]),
@@ -520,7 +520,7 @@ with tab2:
         st.plotly_chart(fig_tenure, use_container_width=True)
 
     with col_narrow:
-        st.markdown("**Cat 1 Hazards (% PRS)** — EHS, London")
+        st.markdown("**Cat 1 Hazards (% PRS)** — English Housing Survey")
         fig_hz = go.Figure()
         fig_hz.add_trace(go.Scatter(
             x=hz_prs["ehsyear"], y=(hz_prs["rate"] * 100).round(1),
