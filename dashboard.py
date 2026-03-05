@@ -483,8 +483,8 @@ with tab2:
         (k1, "Proportion of households in PRS", f"{prs_share:.1%}",             f"EHS {prs_year}",             C["purple"]),
         (k2, "PRS households in Cat 1 hazards homes", f"{hz_latest_rate:.1%}",        f"EHS {hz_latest_year}",       C["pink"]),
         # (k3, "Illegal Eviction Cases",      str(eviction_latest),           f"Met Police {eviction_year}", C["yellow"]),
-        (k3, "Guarantor/Advance Required", f"{guar_pct:.0%}",              "EPLS 2024",           C["green"]),
-        (k4, "Landlord type — Individual", f"{lt['pct'].iloc[0]:.0%}",     "EPLS 2024",                    C["yellow"]),
+        (k3, "Guarantor/Advance required", f"{guar_pct:.0%}",              "EPLS 2024",           C["green"]),
+        (k4, "Landlords with 1 property only", f"{pt['pct'].iloc[0]:.0%}",     "EPLS 2024",                    C["yellow"]),
     ]:
         with col:
             st.markdown(f"""
