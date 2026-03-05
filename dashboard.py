@@ -27,7 +27,7 @@ st.set_page_config(
 st.markdown(f"""
 <style>
   .main {{ background-color: {C['offwhite']}; }}
-  .block-container {{ padding-top: 1rem; }}
+  .block-container {{ padding-top: 4rem; }}
   h1, h2, h3 {{ color: {C['navy']}; }}
   .kpi-card {{
       background: {C['white']}; border-radius: 8px; padding: 16px 20px;
