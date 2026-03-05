@@ -329,8 +329,8 @@ with tab1:
         st.markdown("**Annual Asking Rent Change (%)** — Rightmove Rental Price Tracker")
         rm_colors = {
             "London":          C["blue"],
-            "Inner London":    C["purple"],
-            "Outer London":    C["lightblue"],
+            "Inner London":    C["pink"],
+            "Outer London":    C["yellow"],
             "Rest of Britain": C["green"],
         }
         quarters = rm_tracker["Quarter"].tolist()
@@ -388,7 +388,7 @@ with tab1:
         st.plotly_chart(fig3, use_container_width=True)
 
     with col4:
-        st.markdown("**Homeless Prevention Duty — by Reason** — MHCLG, London")
+        st.markdown("**Homeless Prevention Duty — by Reason** — MHCLG")
         hp_colors = [C["blue"], C["purple"], C["lightblue"], C["yellow"],
                      C["pink"], C["green"], C["navy"]]
         hp_labels = {
@@ -417,7 +417,7 @@ with tab1:
 
     col5, col6 = st.columns(2)
     with col5:
-        st.markdown("**RICS — Tenant Demand & Landlord Instructions (net balance)** — London")
+        st.markdown("**Tenant Demand & Landlord Instructions** — RICS UK Residential Market Survey")
         rics_plot = rics.dropna(subset=["Landlord instr London"]).copy()
         fig5 = go.Figure()
         fig5.add_trace(go.Scatter(x=rics_plot["Quarter"], y=rics_plot["Tenant demand London"],
@@ -439,7 +439,7 @@ with tab1:
         st.plotly_chart(fig5, use_container_width=True)
 
     with col6:
-        st.markdown("**Rental Listings (14-day)** — Rightmove via GLA")
+        st.markdown("**Rental Listings listed on Rightmove in the last 14 days** — Rightmove via GLA")
         fig6 = go.Figure()
         fig6.add_trace(go.Scatter(x=rm_14d["Date"], y=rm_14d["14d"],
             name="London", line=dict(color=C["green"], width=2)))
@@ -538,7 +538,7 @@ with tab2:
     col_pie, col_stay = st.columns([1, 2])
 
     with col_pie:
-        st.markdown("**Guarantor / Advance Required** — EPLS 2024, London")
+        st.markdown("**Guarantor / Advance Required** — English Private Landlord Survey 2024")
         # Simplify into three slices: Guarantor only, Rent advance only, Both, Neither
         guar_labels = ["Guarantor", "Rent advance", "Both", "Neither", "Don't know"]
         guar_map    = {
@@ -566,7 +566,7 @@ with tab2:
         st.plotly_chart(fig_pie, use_container_width=True)
 
     with col_stay:
-        st.markdown("**Length of Current Stay — Private Renters (%)** — English Housing Survey, London")
+        st.markdown("**Length of Current Stay — Private Renters (%)** — English Housing Survey")
         stay_bands = {
             "0–1 yr":  "0-1yr",
             "2 yrs":   "2yr",
@@ -599,7 +599,7 @@ with tab2:
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown("**Landlord Type** — EPLS 2024")
+        st.markdown("**Landlord Type** — English Private Landlord Survey 2024")
         fig_lt = px.bar(lt, x="pct_pct", y="Type_short", orientation="h",
             color_discrete_sequence=[C["blue"]])
         fig_lt.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
@@ -610,7 +610,7 @@ with tab2:
         st.plotly_chart(fig_lt, use_container_width=True)
 
     with col2:
-        st.markdown("**Portfolio Size** — EPLS 2024")
+        st.markdown("**Portfolio Size** — English Private Landlord Survey 2024")
         fig_pt = px.bar(pt, x="pct_pct", y="Size_short", orientation="h",
             color_discrete_sequence=[C["purple"]])
         fig_pt.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
@@ -621,7 +621,7 @@ with tab2:
         st.plotly_chart(fig_pt, use_container_width=True)
 
     with col3:
-        st.markdown("**Illegal Eviction Cases** — Met Police, London")
+        st.markdown("**Illegal Eviction Cases** — Met Police")
         fig_ev = go.Figure()
         fig_ev.add_trace(go.Bar(x=eviction_df["Year"], y=eviction_df["Cases"],
             marker_color=C["yellow"]))
