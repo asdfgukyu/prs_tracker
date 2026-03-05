@@ -605,7 +605,7 @@ with tab2:
         st.markdown("**Landlord Type** — English Private Landlord Survey, 2024")
         fig_lt = px.bar(lt, x="pct_pct", y="Type_short", orientation="h",
             color_discrete_sequence=[C["blue"]])
-        fig_lt.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
+        fig_lt.update_layout(height=200, margin=dict(l=0, r=0, t=30, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             xaxis_ticksuffix="%", showlegend=False, xaxis_title="", yaxis_title="")
         fig_lt.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
@@ -616,7 +616,7 @@ with tab2:
         st.markdown("**Portfolio Size** — English Private Landlord Survey, 2024")
         fig_pt = px.bar(pt, x="pct_pct", y="Size_short", orientation="h",
             color_discrete_sequence=[C["purple"]])
-        fig_pt.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
+        fig_pt.update_layout(height=200, margin=dict(l=0, r=0, t=30, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             xaxis_ticksuffix="%", showlegend=False, xaxis_title="", yaxis_title="")
         fig_pt.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
