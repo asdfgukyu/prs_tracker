@@ -125,6 +125,8 @@ def load_all_data(path):
     for c in ["Tenant demand EW", "Tenant demand London",
               "Landlord instr EW", "Landlord instr London"]:
         rics[c] = pd.to_numeric(rics[c], errors="coerce")
+    rics = rics[rics["Quarter"].str[:4] >= "2019"].reset_index(drop=True)
+
 
     # ── Met Police illegal evictions (annual totals) ──────────────
     # Row 5 = header; row 6+ = data (last row = Grand Total)
@@ -388,7 +390,7 @@ with tab1:
         st.plotly_chart(fig3, use_container_width=True)
 
     with col4:
-        st.markdown("**Homeless Prevention Duty — by Reason** — MHCLG")
+        st.markdown("**Homeless Prevention Duty by Reason** — MHCLG")
         hp_colors = [C["blue"], C["purple"], C["lightblue"], C["yellow"],
                      C["pink"], C["green"], C["navy"]]
         hp_labels = {
@@ -498,7 +500,7 @@ with tab2:
     col_wide, col_narrow = st.columns([3, 1])
 
     with col_wide:
-        st.markdown("** Households by tenure (%)** — English Housing Survey")
+        st.markdown("**Households by tenure (%)** — English Housing Survey")
         fig_tenure = go.Figure()
         for tenure_col, label, color in [
             ("prs",    "Private renters", C["purple"]),
@@ -561,7 +563,7 @@ with tab2:
             textfont=dict(size=11),
             hole=0.35,
         ))
-        fig_pie.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=5),
+        fig_pie.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=7),
             paper_bgcolor=C["white"], showlegend=False)
         st.plotly_chart(fig_pie, use_container_width=True)
 
