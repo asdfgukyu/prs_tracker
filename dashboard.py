@@ -551,7 +551,7 @@ with tab2:
         guar_plot = guar.copy()
         guar_plot["Label"] = guar_plot["ReqGuaRent"].map(guar_map)
         guar_plot = guar_plot.dropna(subset=["Label", "pct"])
-        pie_colors = [C["green"], C["blue"], C["purple"], C["offwhite"], C["lightblue"]]
+        pie_colors = [C["green"], C["blue"], C["pink"], C["yellow"], C["lightblue"]]
         fig_pie = go.Figure(go.Pie(
             labels=guar_plot["Label"],
             values=(guar_plot["pct"] * 100).round(1),
