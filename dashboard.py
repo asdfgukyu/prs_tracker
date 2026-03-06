@@ -266,10 +266,22 @@ st.markdown(f"""
 
 st.markdown("""
 <div class="act-banner">
-  ⚑ <strong>Renters' Rights Act</strong> — Royal Assent granted <strong>October 2025</strong>.
+  ⚑ <strong> Renters' Rights Act</strong> — Royal Assent granted <strong>October 2025</strong>.
   Act comes into force <strong>May 2026</strong>. Charts show reference lines at both points.
 </div>
 """, unsafe_allow_html=True)
+
+with st.expander("📋 Key legislative changes introduced by the Renters' Rights Act", expanded=True):
+    st.markdown("""
+    The Renters' Rights Act (RRA) is due to come into effect in **May 2026**, introducing the following key legislative changes:
+
+    - **Abolition of Section 21 'no fault' evictions**, removing a landlord's ability to evict tenants without providing a valid reason.
+    - **Abolition of Assured Shorthold Tenancies**, with all tenancies transitioning to periodic tenancies on an ongoing basis.
+    - **Extended protection periods** preventing landlords from evicting tenants on the grounds of selling the property or reclaiming it for personal use.
+    - **Rent increases limited to once per year**, in line with prevailing market rates.
+    - **Prohibition on advance rent payments**, preventing landlords from requesting more than one month's rent upfront.
+    - **Introduction of the Private Rented Sector (PRS) Decent Homes Standard**, establishing minimum property condition requirements across the sector.
+    """)
 
 eng_toggle = st.toggle("Show England / UK comparison", value=False)
 
