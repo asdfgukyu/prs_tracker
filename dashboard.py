@@ -32,8 +32,7 @@ COMMENTARY = {
     ],
     "portfolio" :["According to latest EPLS, most landlords in London (42%) hold one property, broadly in line with the national average at 45%. 25% of London landlords hold five or more properties compared to 17% across England."
     ]
-
-}
+    }
 
 
 # ── Page config ─────────────────────────────────────────────────
@@ -75,16 +74,16 @@ def load_all_data(path):
     xl = pd.read_excel(path, sheet_name=None, header=None)
 
     # ── HomeLet Rental Index ─────────────────────────────────────
-    hom = xl["Homelet Rental Index"].iloc[7:].copy()
-    hom.columns = ["_drop", "Date", "UK", "Greater London", "UK change", "London change"]
-    hom = hom.dropna(subset=["Date"])
-    hom["Date"] = pd.to_datetime(hom["Date"], errors="coerce")
-    hom = hom.dropna(subset=["Date"]).sort_values("Date").reset_index(drop=True)
-    for c in ["Greater London", "UK", "UK change", "London change"]:
+    hom = xl["Homelet Rental Index"].iloc[7:].copy()                                        #crete a copy
+    hom.columns = ["_drop", "Date", "UK", "Greater London", "UK change", "London change"]   #select columns and give them new names
+    hom = hom.dropna(subset=["Date"])                                                       #drop row with missing date
+    hom["Date"] = pd.to_datetime(hom["Date"], errors="coerce")                              #convert to datetime
+    hom = hom.dropna(subset=["Date"]).sort_values("Date").reset_index(drop=True)            #drop rows with invalid dates, sort and reset index
+    for c in ["Greater London", "UK", "UK change", "London change"]:                        #for these columns, convert to numeric, coercing errors to NaN
         hom[c] = pd.to_numeric(hom[c], errors="coerce")
-    hom_change = hom.dropna(subset=["UK change", "London change"]).copy()
-    hom_change = hom_change[hom_change["Date"] >= "2019-01-01"].reset_index(drop=True)
-    hom_change["UK change"] = hom_change["UK change"] * 100
+    hom_change = hom.dropna(subset=["UK change", "London change"]).copy()                   #create new df with selected columns with remove rows w NA
+    hom_change = hom_change[hom_change["Date"] >= "2019-01-01"].reset_index(drop=True)      #filter to dates from 2019 onwards
+    hom_change["UK change"] = hom_change["UK change"] * 100                                 #change to percentage
     hom_change["London change"] = hom_change["London change"] * 100
 
     # ── Rightmove rental supply (14-day listings) ────────────────
@@ -114,12 +113,12 @@ def load_all_data(path):
                   "Illegal eviction", "Tenant abandoned", "Other"]
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
     hp["Date"] = pd.to_datetime(hp["Date"], errors="coerce")
-    HP_BANDS = ["Rent arrears", "Sell property", "Re-let property", "Retire",
+    HP_REASON = ["Rent arrears", "Sell property", "Re-let property", "Retire",
                 "Disrepair complaint", "Illegal eviction", "Tenant abandoned"]
-    for col in HP_BANDS:
+    for col in HP_REASON:
         hp[col] = pd.to_numeric(hp[col], errors="coerce").fillna(0)
-    hp["Total"] = hp[HP_BANDS].sum(axis=1)
-    hp["Quarter"] = hp["Date"].dt.to_period("Q").astype(str)
+    hp["Total"] = hp[HP_REASON].sum(axis=1)
+    hp["Quarter"] = hp["Date"].dt.to_period("Q").astype(str)                              #transform date to quarter format!
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
 
     # ── Rightmove Rental Price Tracker (annual % change) ─────────
@@ -233,14 +232,11 @@ guar_pct         = guar[guar["ReqGuaRent"].isin([
     "Both"
 ])]["pct"].sum()
 
-ACT_DATE     = "2026-05-01"
-ASSENT_DATE  = "2025-10-01"
-
 def _vline(fig, x_position, label, color, y_label):
     fig.add_shape(
         type="line",
-        x0=x_position, x1=x_position,
-        y0=0, y1=1,
+        x0=x_position, x1=x_position,  # where in the x-axis 
+        y0=0, y1=1,                    # straight line full height of the plot
         xref="x", yref="paper",
         line=dict(color=color, width=2, dash="dash")
     )
@@ -255,6 +251,8 @@ def _vline(fig, x_position, label, color, y_label):
         borderpad=2
     )
 
+ACT_DATE     = "2026-05-01"
+ASSENT_DATE  = "2025-10-01"
 
 def add_reference_lines_date(fig):
     _vline(fig, ASSENT_DATE, "Royal Assent Oct 2025", C["grey"], y_label=0.9)
