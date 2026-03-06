@@ -237,14 +237,24 @@ ACT_DATE     = "2026-05-01"
 ASSENT_DATE  = "2025-10-01"
 
 
-def _vline(fig, x, label, color, y_label=0.97):
-    fig.add_shape(type="line", x0=x, x1=x, y0=0, y1=1,
-                  xref="x", yref="paper",
-                  line=dict(color=color, width=2, dash="dash"))
-    fig.add_annotation(x=x, y=y_label, xref="x", yref="paper", text=label,
-                       showarrow=False, font=dict(color=color, size=10),
-                       yanchor="top", xanchor="left",
-                       bgcolor="rgba(255,255,255,0.7)", borderpad=2)
+def _vline(fig, x_position, label, color, y_label=0.97):
+    fig.add_shape(
+        type="line",
+        x0=x_position, x1=x_position,
+        y0=0, y1=1,
+        xref="x", yref="paper",
+        line=dict(color=color, width=2, dash="dash")
+    )
+    fig.add_annotation(
+        x=x_position, y=y_label,
+        xref="x", yref="paper",
+        text=label,
+        showarrow=False,
+        font=dict(color=color, size=10),
+        yanchor="top", xanchor="left",
+        bgcolor="rgba(255,255,255,0.7)",
+        borderpad=2
+    )
 
 
 def add_reference_lines_date(fig):
@@ -372,8 +382,8 @@ with tab1:
                 customdata=quarters))
         fig2.add_hline(y=0, line=dict(color=C["black"], width=1))
         for x_pos, label, color, y_label in [
-            (assent_x, "Royal Assent Oct 2025", C["grey"], 0.97),
-            (act_x,    "Act in force May 2026",  C["grey"], 0.80),
+            (assent_x, "Royal Assent Oct 2025", C["grey"], 0.9),
+            (act_x,    "Act in force May 2026",  C["grey"], 0.7),
         ]:
             fig2.add_shape(type="line", x0=x_pos, x1=x_pos, y0=0, y1=1,
                            xref="x", yref="paper",
