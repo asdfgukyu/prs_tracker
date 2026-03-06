@@ -18,6 +18,24 @@ C = {
     "grey":     "#AEAAAA",
 }
 
+# ── Commentary ─────────────────────────────────────────────────
+
+COMMENTARY = {
+    "homelet": [
+        "London rent growth peaked at around +15% in mid-2023 before gradually easing",
+        "As of the latest data, annual growth remains positive but is slowing",
+    ],
+    "household": ["The private renting is the fastest growing tenure in London as the proportion of Londoners living in social housing or owning their own homes has fallen steadily over the last decade.",
+                   "According to the English Housing Survey, the proportion of households living in the private rented sector grew from 24% in 2012 to 32% in 2023, equivalent to 1,193,000 households. Owner occupier remains the main tenure with 47% of all London households, falling from 51% in 2012."
+    ],
+    "guarantor": ["Data from the 2024 English Private Landlord Survey (EPLS)* shows that 12% of private landlords in London asked for guarantor, 38% requested rent in advice (in addition to a deposit) and 6% asked for both. The English Housing Survey reported similar figures, reported 22% of PRS landlords requested for guarantor."
+    ],
+    "portfolio" :["According to latest EPLS, most landlords in London (42%) hold one property, broadly in line with the national average at 45%. 25% of London landlords hold five or more properties compared to 17% across England."
+    ]
+
+}
+
+
 # ── Page config ─────────────────────────────────────────────────
 st.set_page_config(
     page_title=" London PRS Dashboard — Renters' Rights Act Impact Tracker",
@@ -310,6 +328,13 @@ with tab1:
         fig.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
         fig.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig, use_container_width=True)
+        if COMMENTARY.get("homelet"):
+            bullets = "".join(f"<li>{b}</li>" for b in COMMENTARY["homelet"])
+            st.markdown(f"""
+            <div style="border-left:3px solid {C['navy']}; padding:8px 14px; margin-top:-8px;
+                background:{C['white']}; border-radius:4px; font-size:14px;">
+            <ul style="margin:0; padding-left:18px; color:{C['black']};">{bullets}</ul>
+            </div>""", unsafe_allow_html=True)
 
     with col2:
         st.markdown("**Annual Asking Rent Change (%)** — Rightmove Rental Price Tracker")
@@ -510,6 +535,13 @@ with tab2:
         fig_tenure.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
         fig_tenure.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig_tenure, use_container_width=True)
+        if COMMENTARY.get("household"):
+            bullets = "".join(f"<li>{b}</li>" for b in COMMENTARY["household"])
+            st.markdown(f"""
+            <div style="border-left:3px solid {C['navy']}; padding:8px 14px; margin-top:-8px;
+                background:{C['white']}; border-radius:4px; font-size:14px;">
+            <ul style="margin:0; padding-left:18px; color:{C['black']};">{bullets}</ul>
+            </div>""", unsafe_allow_html=True)
 
     with col_narrow:
         st.markdown("**Cat 1 Hazards (% PRS)** — English Housing Survey")
@@ -550,6 +582,13 @@ with tab2:
         fig_pie.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=7),
             paper_bgcolor=C["white"], showlegend=False)
         st.plotly_chart(fig_pie, use_container_width=True)
+        if COMMENTARY.get("guarantor"):
+            bullets = "".join(f"<li>{b}</li>" for b in COMMENTARY["guarantor"])
+            st.markdown(f"""
+            <div style="border-left:3px solid {C['navy']}; padding:8px 14px; margin-top:-8px;
+                background:{C['white']}; border-radius:4px; font-size:14px;">
+            <ul style="margin:0; padding-left:18px; color:{C['black']};">{bullets}</ul>
+            </div>""", unsafe_allow_html=True)
 
     with col_stay:
         st.markdown("**Length of Current Stay — Private Renters (%)** — English Housing Survey")
@@ -602,6 +641,13 @@ with tab2:
         fig_pt.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
         fig_pt.update_yaxes(showgrid=False)
         st.plotly_chart(fig_pt, use_container_width=True)
+        if COMMENTARY.get("portfolio"):
+            bullets = "".join(f"<li>{b}</li>" for b in COMMENTARY["portfolio"])
+            st.markdown(f"""
+            <div style="border-left:3px solid {C['navy']}; padding:8px 14px; margin-top:-8px;
+                background:{C['white']}; border-radius:4px; font-size:14px;">
+            <ul style="margin:0; padding-left:18px; color:{C['black']};">{bullets}</ul>
+            </div>""", unsafe_allow_html=True)
 
     with col3:
         st.markdown("**Illegal Eviction Cases** — Met Police")
