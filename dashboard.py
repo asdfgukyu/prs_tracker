@@ -248,8 +248,8 @@ def _vline(fig, x, label, color, y_label=0.97):
 
 
 def add_reference_lines_date(fig):
-    _vline(fig, ASSENT_DATE, "Royal Assent Oct 2025", C["grey"], y_label=0.97)
-    _vline(fig, ACT_DATE,    "Act in force May 2026",  C["grey"], y_label=0.80)
+    _vline(fig, ASSENT_DATE, "Royal Assent Oct 2025", C["grey"], y_label=0.9)
+    _vline(fig, ACT_DATE,    "Act in force May 2026",  C["grey"], y_label=0.7)
 
 
 # ── Header ───────────────────────────────────────────────────────
