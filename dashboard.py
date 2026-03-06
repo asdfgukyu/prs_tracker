@@ -236,8 +236,7 @@ guar_pct         = guar[guar["ReqGuaRent"].isin([
 ACT_DATE     = "2026-05-01"
 ASSENT_DATE  = "2025-10-01"
 
-
-def _vline(fig, x_position, label, color, y_label=0.97):
+def _vline(fig, x_position, label, color, y_label):
     fig.add_shape(
         type="line",
         x0=x_position, x1=x_position,
