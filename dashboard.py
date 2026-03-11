@@ -106,14 +106,14 @@ def load_all_data(path):
     pipr = pipr.dropna(subset=["Date"]).sort_values("Date").reset_index(drop=True)
     pipr["London"] = pd.to_numeric(pipr["London"], errors="coerce")
 
-    # ── Homeless prevention duty ──────────────────────────────────
-    hp = xl["Homeless prevention duty"].iloc[7:].copy()
-    hp.columns = ["_drop", "Date", "Region", "Rent arrears", "Sell property",
+    # ── Prevention duty by reason ──────────────────────────────────
+    hp = xl["Prevention duty by reason"].iloc[7:].copy()
+    hp.columns = ["_drop", "Date", "Region", "Rent arrears", "Rent arrears of which: due to rent increase", "Sell property",
                   "Re-let property", "Retire", "Disrepair complaint",
                   "Illegal eviction", "Tenant abandoned", "Other"]
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
     hp["Date"] = pd.to_datetime(hp["Date"], errors="coerce")
-    HP_REASON = ["Rent arrears", "Sell property", "Re-let property", "Retire",
+    HP_REASON = ["Rent arrears", "Rent arrears of which: due to rent increase", "Sell property", "Re-let property", "Retire",
                 "Disrepair complaint", "Illegal eviction", "Tenant abandoned"]
     for col in HP_REASON:
         hp[col] = pd.to_numeric(hp[col], errors="coerce").fillna(0)
@@ -420,7 +420,8 @@ with tab1:
         hp_colors = [C["blue"], C["purple"], C["lightblue"], C["yellow"],
                      C["pink"], C["green"], C["navy"]]
         hp_labels = {
-            "Rent arrears":       "Rent arrears (rent increase)",
+            "Rent arrears":       "Total rent arrears",
+            "Rent arrears of which: due to rent increase": "Rent arrears (rent increase)",
             "Sell property":      "Landlord selling",
             "Re-let property":    "Landlord re-letting",
             "Retire":             "Landlord retiring",
