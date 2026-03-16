@@ -18,21 +18,28 @@ C = {
     "grey":     "#AEAAAA",
 }
 
-# ── Commentary ─────────────────────────────────────────────────
-
+# ── Commentary ───────────────────────────────────────────────────
+# Edit bullet points here — one key per section.
+# Add or remove strings from each list freely.
 COMMENTARY = {
-    "homelet": [
-        "London rent growth peaked at around +15% in mid-2023 before gradually easing",
-        "As of the latest data, annual growth remains positive but is slowing",
+    # Rental Price Indexes — right-hand panel bullets (3 sources compared)
+    "rent_indexes": [
+        "The ONS PIPR is the official measure of private rent inflation, covering all tenancies including renewals",
+        "The Rightmove tracker reflects asking rents on new listings only — typically a leading indicator",
+        "HomeLet captures agreed rents on new tenancies, sitting between the two in terms of coverage",
     ],
-    "household": ["The private renting is the fastest growing tenure in London as the proportion of Londoners living in social housing or owning their own homes has fallen steadily over the last decade.",
-                   "According to the English Housing Survey, the proportion of households living in the private rented sector grew from 24% in 2012 to 32% in 2023, equivalent to 1,193,000 households. Owner occupier remains the main tenure with 47% of all London households, falling from 51% in 2012."
+    # Rental Price Indexes — full-width notes below all 3 charts
+    "rent_indexes_notes": [
+        "All three indices show London rent growth easing from peaks seen in 2022–23",
+        "Divergence between indices reflects methodological differences: ONS lags due to inclusion of existing tenancies, while Rightmove moves first as a new-listings measure",
+        "Add further notes or external source commentary here",
     ],
-    "guarantor": ["Data from the 2024 English Private Landlord Survey (EPLS)* shows that 12% of private landlords in London asked for guarantor, 38% requested rent in advice (in addition to a deposit) and 6% asked for both. The English Housing Survey reported similar figures, reported 22% of PRS landlords requested for guarantor."
+    # Homelessness — full-width notes below all 3 charts
+    "homelessness_notes": [
+        "Add homelessness commentary here",
+        "Additional notes from external sources can go here",
     ],
-    "portfolio" :["According to latest EPLS, most landlords in London (42%) hold one property, broadly in line with the national average at 45%. 25% of London landlords hold five or more properties compared to 17% across England."
-    ]
-    }
+}
 
 
 # ── Page config ─────────────────────────────────────────────────
@@ -74,16 +81,16 @@ def load_all_data(path):
     xl = pd.read_excel(path, sheet_name=None, header=None)
 
     # ── HomeLet Rental Index ─────────────────────────────────────
-    hom = xl["Homelet Rental Index"].iloc[7:].copy()                                        #crete a copy
-    hom.columns = ["_drop", "Date", "UK", "Greater London", "UK change", "London change"]   #select columns and give them new names
-    hom = hom.dropna(subset=["Date"])                                                       #drop row with missing date
-    hom["Date"] = pd.to_datetime(hom["Date"], errors="coerce")                              #convert to datetime
-    hom = hom.dropna(subset=["Date"]).sort_values("Date").reset_index(drop=True)            #drop rows with invalid dates, sort and reset index
-    for c in ["Greater London", "UK", "UK change", "London change"]:                        #for these columns, convert to numeric, coercing errors to NaN
+    hom = xl["Homelet Rental Index"].iloc[7:].copy()
+    hom.columns = ["_drop", "Date", "UK", "Greater London", "UK change", "London change"]
+    hom = hom.dropna(subset=["Date"])
+    hom["Date"] = pd.to_datetime(hom["Date"], errors="coerce")
+    hom = hom.dropna(subset=["Date"]).sort_values("Date").reset_index(drop=True)
+    for c in ["Greater London", "UK", "UK change", "London change"]:
         hom[c] = pd.to_numeric(hom[c], errors="coerce")
-    hom_change = hom.dropna(subset=["UK change", "London change"]).copy()                   #create new df with selected columns with remove rows w NA
-    hom_change = hom_change[hom_change["Date"] >= "2019-01-01"].reset_index(drop=True)      #filter to dates from 2019 onwards
-    hom_change["UK change"] = hom_change["UK change"] * 100                                 #change to percentage
+    hom_change = hom.dropna(subset=["UK change", "London change"]).copy()
+    hom_change = hom_change[hom_change["Date"] >= "2019-01-01"].reset_index(drop=True)
+    hom_change["UK change"] = hom_change["UK change"] * 100
     hom_change["London change"] = hom_change["London change"] * 100
 
     # ── Rightmove rental supply (14-day listings) ────────────────
@@ -106,19 +113,22 @@ def load_all_data(path):
     pipr = pipr.dropna(subset=["Date"]).sort_values("Date").reset_index(drop=True)
     pipr["London"] = pd.to_numeric(pipr["London"], errors="coerce")
 
-    # ── Prevention duty by reason ──────────────────────────────────
+    # ── Prevention duty by reason ─────────────────────────────────
     hp = xl["Prevention duty by reason"].iloc[7:].copy()
-    hp.columns = ["_drop", "Date", "Region", "Rent arrears", "Rent arrears of which: due to rent increase", "Sell property",
-                  "Re-let property", "Retire", "Disrepair complaint",
-                  "Illegal eviction", "Tenant abandoned", "Other"]
+    hp.columns = ["_drop", "Date", "Region",
+                  "Rent arrears", "Rent arrears (rent increase)",
+                  "Sell property", "Re-let property", "Retire",
+                  "Disrepair complaint", "Illegal eviction",
+                  "Tenant abandoned", "Other"]
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
     hp["Date"] = pd.to_datetime(hp["Date"], errors="coerce")
-    HP_REASON = ["Rent arrears", "Rent arrears of which: due to rent increase", "Sell property", "Re-let property", "Retire",
+    HP_BANDS = ["Rent arrears", "Rent arrears (rent increase)",
+                "Sell property", "Re-let property", "Retire",
                 "Disrepair complaint", "Illegal eviction", "Tenant abandoned"]
-    for col in HP_REASON:
+    for col in HP_BANDS:
         hp[col] = pd.to_numeric(hp[col], errors="coerce").fillna(0)
-    hp["Total"] = hp[HP_REASON].sum(axis=1)
-    hp["Quarter"] = hp["Date"].dt.to_period("Q").astype(str)                              #transform date to quarter format!
+    hp["Total"] = hp[HP_BANDS].sum(axis=1)
+    hp["Quarter"] = hp["Date"].dt.to_period("Q").astype(str)
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
 
     # ── Rightmove Rental Price Tracker (annual % change) ─────────
@@ -232,31 +242,23 @@ guar_pct         = guar[guar["ReqGuaRent"].isin([
     "Both"
 ])]["pct"].sum()
 
-def _vline(fig, x_position, label, color, y_label):
-    fig.add_shape(
-        type="line",
-        x0=x_position, x1=x_position,  # where in the x-axis 
-        y0=0, y1=1,                    # straight line full height of the plot
-        xref="x", yref="paper",
-        line=dict(color=color, width=2, dash="dash")
-    )
-    fig.add_annotation(
-        x=x_position, y=y_label,
-        xref="x", yref="paper",
-        text=label,
-        showarrow=False,
-        font=dict(color=color, size=10),
-        yanchor="top", xanchor="left",
-        bgcolor="rgba(255,255,255,0.7)",
-        borderpad=2
-    )
-
 ACT_DATE     = "2026-05-01"
 ASSENT_DATE  = "2025-10-01"
 
+
+def _vline(fig, x, label, color, y_label=0.97):
+    fig.add_shape(type="line", x0=x, x1=x, y0=0, y1=1,
+                  xref="x", yref="paper",
+                  line=dict(color=color, width=2, dash="dash"))
+    fig.add_annotation(x=x, y=y_label, xref="x", yref="paper", text=label,
+                       showarrow=False, font=dict(color=color, size=10),
+                       yanchor="top", xanchor="left",
+                       bgcolor="rgba(255,255,255,0.7)", borderpad=2)
+
+
 def add_reference_lines_date(fig):
-    _vline(fig, ASSENT_DATE, "Royal Assent Oct 2025", C["grey"], y_label=0.9)
-    _vline(fig, ACT_DATE,    "Act in force May 2026",  C["grey"], y_label=0.7)
+    _vline(fig, ASSENT_DATE, "Royal Assent Oct 2025", C["grey"], y_label=0.97)
+    _vline(fig, ACT_DATE,    "Act in force May 2026",  C["grey"], y_label=0.80)
 
 
 # ── Header ───────────────────────────────────────────────────────
@@ -273,12 +275,12 @@ st.markdown(f"""
 
 st.markdown("""
 <div class="act-banner">
-  ⚑ <strong> Renters' Rights Act</strong> — Royal Assent granted <strong>October 2025</strong>.
+  ⚑ <strong>Renters' Rights Act</strong> — Royal Assent granted <strong>October 2025</strong>.
   Act comes into force <strong>May 2026</strong>. Charts show reference lines at both points.
 </div>
 """, unsafe_allow_html=True)
 
-with st.expander("📋 Key legislative changes introduced by the Renters' Rights Act", expanded=True):
+with st.expander("📋 Key legislative changes introduced by the Renters' Rights Act", expanded=False):
     st.markdown("""
     The Renters' Rights Act (RRA) is due to come into effect in **May 2026**, introducing the following key legislative changes:
 
@@ -324,124 +326,167 @@ with tab1:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    col1, col2 = st.columns(2)
+    # ════════════════════════════════════
+    # GROUP 1 — RENTAL PRICE INDEXES
+    # ════════════════════════════════════
+    st.markdown(f"""<hr style="border:none; border-top:2px solid {C['navy']}; margin:8px 0 4px 0;">""", unsafe_allow_html=True)
+    st.markdown(f"<span style='font-size:15px; font-weight:700; color:{C['navy']}'>Rental Price Indexes</span>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    with col1:
-        st.markdown("**Annual Rent Change (%)** — HomeLet Rental Index")
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=hom_change["Date"], y=hom_change["London change"],
-            name="London", line=dict(color=C["blue"], width=2),
-            hovertemplate="%{x|%b %Y}: %{y:.1f}%<extra>London</extra>"))
-        fig.add_trace(go.Scatter(
-            x=hom_change["Date"], y=hom_change["UK change"],
-            name="UK", line=dict(color=C["lightblue"], width=2,
-            dash="dot" if not eng_toggle else "solid"),
-            visible=True if eng_toggle else "legendonly",
-            hovertemplate="%{x|%b %Y}: %{y:.1f}%<extra>UK</extra>"))
-        fig.add_hline(y=0, line=dict(color=C["black"], width=1))
-        add_reference_lines_date(fig)
-        fig.update_layout(height=280, margin=dict(l=0, r=0, t=8, b=0),
+    rpi_left, rpi_right = st.columns(2)
+
+    with rpi_left:
+        st.markdown("**Annual Rent Change (%) — Rental Price Indexes**")
+        st.caption("Click a trace to hide/show it. Double-click to isolate.")
+
+        # ── Align all 3 sources to a common monthly date axis from 2020 ──
+        pipr_2020 = pipr[pipr["Date"] >= "2023-01-01"].copy()
+
+        # Rightmove is quarterly — interpolate to monthly for overlay
+        rm_2020 = rm_tracker[rm_tracker["Quarter"].str[:4] >= "2023"].reset_index(drop=True)
+        # Convert quarter strings to approximate mid-quarter dates
+        def q_to_date(q):
+            yr, qt = q.split(" Q")
+            month = {"1": "02", "2": "05", "3": "08", "4": "11"}[qt]
+            return pd.Timestamp(f"{yr}-{month}-01")
+        rm_2020["Date"] = rm_2020["Quarter"].apply(q_to_date)
+
+        hom_2020 = hom_change[hom_change["Date"] >= "2023-01-01"].copy()
+
+        fig_rpi = go.Figure()
+
+        # ONS PIPR — London
+        fig_rpi.add_trace(go.Scatter(
+            x=pipr_2020["Date"], y=pipr_2020["London"],
+            name="London",
+            legendgroup="ons",
+            legendgrouptitle=dict(text="ONS PIPR", font=dict(size=11, color=C["navy"])),
+            line=dict(color=C["pink"], width=2),
+            hovertemplate="%{x|%b %Y}: %{y:.0f}%<extra>ONS PIPR — London</extra>"))
+
+        # Rightmove — all London geographies grouped, each visible in legend
+        for series, color, width in [
+            ("London",       C["blue"],   2.0),
+            ("Inner London", C["purple"], 1.5),
+            ("Outer London", C["yellow"], 1.5),
+        ]:
+            fig_rpi.add_trace(go.Scatter(
+                x=rm_2020["Date"], y=rm_2020[series],
+                name=series,
+                legendgroup="rightmove",
+                legendgrouptitle=dict(text="Rightmove", font=dict(size=11, color=C["navy"])),
+                showlegend=True,
+                line=dict(color=color, width=width, dash="dot"),
+                hovertemplate=f"%{{x|%b %Y}}: %{{y:.0f}}%<extra>Rightmove — {series}</extra>"))
+
+        # Rightmove — Rest of Britain only with eng_toggle
+        if eng_toggle:
+            fig_rpi.add_trace(go.Scatter(
+                x=rm_2020["Date"], y=rm_2020["Rest of Britain"],
+                name="Rightmove — Rest of Britain",
+                legendgroup="rightmove_rob",
+                line=dict(color=C["green"], width=1.5, dash="dot"),
+                hovertemplate="%{x|%b %Y}: %{y:.0f}%<extra>Rightmove — Rest of Britain</extra>"))
+
+        # HomeLet — London always visible
+        fig_rpi.add_trace(go.Scatter(
+            x=hom_2020["Date"], y=hom_2020["London change"],
+            name="London",
+            legendgroup="homelet",
+            legendgrouptitle=dict(text="HomeLet", font=dict(size=11, color=C["navy"])),
+            line=dict(color=C["green"], width=2, dash="dash"),
+            hovertemplate="%{x|%b %Y}: %{y:.0f}%<extra>HomeLet — London</extra>"))
+        # HomeLet — UK only with eng_toggle
+        if eng_toggle:
+            fig_rpi.add_trace(go.Scatter(
+                x=hom_2020["Date"], y=hom_2020["UK change"],
+                name="UK",
+                legendgroup="homelet",
+                line=dict(color=C["lightblue"], width=1.5, dash="dash"),
+                hovertemplate="%{x|%b %Y}: %{y:.0f}%<extra>HomeLet — UK</extra>"))
+
+        fig_rpi.add_hline(y=0, line=dict(color=C["black"], width=1))
+        add_reference_lines_date(fig_rpi)
+        fig_rpi.update_layout(
+            height=520, margin=dict(l=0, r=0, t=30, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
-            yaxis=dict(ticksuffix="%"), legend=dict(font=dict(size=11)))
-        fig.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
-        fig.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
-        st.plotly_chart(fig, use_container_width=True)
-        if COMMENTARY.get("homelet"):
-            bullets = "".join(f"<li>{b}</li>" for b in COMMENTARY["homelet"])
+            yaxis=dict(ticksuffix="%"),
+            legend=dict(font=dict(size=11), orientation="h",
+                        yanchor="bottom", y=1.02, xanchor="left", x=0))
+        fig_rpi.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
+        fig_rpi.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
+        st.plotly_chart(fig_rpi, use_container_width=True)
+
+    with rpi_right:
+        if COMMENTARY.get("rent_indexes"):
+            bullets = "".join(f"<li style='margin-bottom:8px'>{b}</li>" for b in COMMENTARY["rent_indexes"])
             st.markdown(f"""
-            <div style="border-left:3px solid {C['navy']}; padding:8px 14px; margin-top:-8px;
-                background:{C['white']}; border-radius:4px; font-size:14px;">
-            <ul style="margin:0; padding-left:18px; color:{C['black']};">{bullets}</ul>
+            <div style="border-left:3px solid {C['navy']}; padding:12px 16px;
+                        background:{C['white']}; border-radius:4px; font-size:14px;">
+              <p style="margin:0 0 10px 0; font-weight:600; color:{C['navy']};">About these indicators</p>
+              <ul style="margin:0; padding-left:18px; color:{C['black']};">{bullets}</ul>
             </div>""", unsafe_allow_html=True)
 
-    with col2:
-        st.markdown("**Annual Asking Rent Change (%)** — Rightmove Rental Price Tracker")
-        rm_colors = {
-            "London":          C["blue"],
-            "Inner London":    C["pink"],
-            "Outer London":    C["yellow"],
-            "Rest of Britain": C["green"],
-        }
-        quarters = rm_tracker["Quarter"].tolist()
-        x_idx = list(range(len(quarters)))
-        assent_x = quarters.index("2025 Q4") if "2025 Q4" in quarters else len(quarters) - 1
-        act_x    = len(quarters) - 1 + 1.5
+    # ════════════════════════════════════
+    # GROUP 2 — HOMELESSNESS
+    # ════════════════════════════════════
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(f"""<hr style="border:none; border-top:2px solid {C['navy']}; margin:8px 0 4px 0;">""", unsafe_allow_html=True)
+    st.markdown(f"<span style='font-size:15px; font-weight:700; color:{C['navy']}'>Homelessness</span>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-        fig2 = go.Figure()
-        for series, color in rm_colors.items():
-            if not eng_toggle and series == "Rest of Britain":
-                continue
-            fig2.add_trace(go.Scatter(
-                x=x_idx, y=rm_tracker[series].tolist(),
-                name=series, line=dict(color=color, width=2),
-                hovertemplate=f"%{{customdata}}: %{{y:.1f}}%<extra>{series}</extra>",
-                customdata=quarters))
-        fig2.add_hline(y=0, line=dict(color=C["black"], width=1))
-        for x_pos, label, color, y_label in [
-            (assent_x, "Royal Assent Oct 2025", C["grey"], 0.9),
-            (act_x,    "Act in force May 2026",  C["grey"], 0.7),
-        ]:
-            fig2.add_shape(type="line", x0=x_pos, x1=x_pos, y0=0, y1=1,
-                           xref="x", yref="paper",
-                           line=dict(color=color, width=2, dash="dash"))
-            fig2.add_annotation(x=x_pos, y=y_label, xref="x", yref="paper", text=label,
-                                showarrow=False, font=dict(color=color, size=10),
-                                yanchor="top", xanchor="left",
-                                bgcolor="rgba(255,255,255,0.7)", borderpad=2)
-        fig2.update_layout(height=280, margin=dict(l=0, r=20, t=8, b=0),
-            paper_bgcolor=C["white"], plot_bgcolor=C["white"],
-            yaxis=dict(ticksuffix="%"), legend=dict(font=dict(size=11)),
-            xaxis=dict(tickmode="array", tickvals=x_idx[::4],
-                       ticktext=quarters[::4], tickangle=45))
-        fig2.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
-        fig2.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
-        st.plotly_chart(fig2, use_container_width=True)
+    hp_colors = [C["blue"], C["purple"], C["lightblue"], C["yellow"],
+                 C["pink"], C["green"], C["navy"], C["grey"]]
+    hp_labels = {
+        "Rent arrears":                "Total rent arrears",
+        "Rent arrears (rent increase)": "Rent arrears (rent increase)",
+        "Sell property":      "Landlord selling",
+        "Re-let property":    "Landlord re-letting",
+        "Retire":             "Landlord retiring",
+        "Disrepair complaint":"Tenant complained — disrepair",
+        "Illegal eviction":   "Illegal eviction",
+        "Tenant abandoned":   "Tenant abandoned property",
+    }
 
-    col3, col4 = st.columns(2)
-
-    with col3:
-        st.markdown("**Annual Rent Change (%)** — ONS Price Index of Private Rent")
-        fig3 = go.Figure()
-        fig3.add_trace(go.Scatter(
-            x=pipr["Date"], y=pipr["London"],
-            name="London", line=dict(color=C["pink"], width=2),
-            hovertemplate="%{x|%b %Y}: %{y:.1f}%<extra>London</extra>"))
-        add_reference_lines_date(fig3)
-        fig3.update_layout(height=280, margin=dict(l=0, r=0, t=8, b=0),
-            paper_bgcolor=C["white"], plot_bgcolor=C["white"],
-            showlegend=False, yaxis=dict(ticksuffix="%"))
-        fig3.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
-        fig3.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
-        st.plotly_chart(fig3, use_container_width=True)
-
-    with col4:
-        st.markdown("**Homeless Prevention Duty by Reason** — MHCLG")
-        hp_colors = [C["blue"], C["purple"], C["lightblue"], C["yellow"],
-                     C["pink"], C["green"], C["navy"]]
-        hp_labels = {
-            "Rent arrears":       "Total rent arrears",
-            "Rent arrears of which: due to rent increase": "Rent arrears (rent increase)",
-            "Sell property":      "Landlord selling",
-            "Re-let property":    "Landlord re-letting",
-            "Retire":             "Landlord retiring",
-            "Disrepair complaint":"Tenant complained — disrepair",
-            "Illegal eviction":   "Illegal eviction",
-            "Tenant abandoned":   "Tenant abandoned property",
-        }
-        fig4 = go.Figure()
+    def make_hp_fig(height=280):
+        f = go.Figure()
         for (band, label), color in zip(hp_labels.items(), hp_colors):
-            fig4.add_trace(go.Bar(
+            f.add_trace(go.Bar(
                 x=hp["Quarter"], y=hp[band],
                 name=label, marker_color=color,
                 hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label}</extra>"))
-        fig4.update_layout(barmode="stack", height=280,
+        f.update_layout(barmode="stack", height=height,
             margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
-            legend=dict(font=dict(size=10), orientation="v", x=1.01, y=1, xanchor="left"))
-        fig4.update_xaxes(showgrid=False)
-        fig4.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
-        st.plotly_chart(fig4, use_container_width=True)
+            legend=dict(font=dict(size=9), orientation="v", x=1.01, y=1, xanchor="left"))
+        f.update_xaxes(showgrid=False)
+        f.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
+        return f
+
+    hcol1, hcol2, hcol3 = st.columns(3)
+    with hcol1:
+        st.markdown("**Homeless Prevention Duty by Reason** — MHCLG")
+        st.plotly_chart(make_hp_fig(), use_container_width=True, key="hp_fig_1")
+    with hcol2:
+        st.markdown("**Placeholder — replace when data available**")
+        st.plotly_chart(make_hp_fig(), use_container_width=True, key="hp_fig_2")
+    with hcol3:
+        st.markdown("**Placeholder — replace when data available**")
+        st.plotly_chart(make_hp_fig(), use_container_width=True, key="hp_fig_3")
+
+    if COMMENTARY.get("homelessness_notes"):
+        bullets = "".join(f"<li style='margin-bottom:6px'>{b}</li>" for b in COMMENTARY["homelessness_notes"])
+        st.markdown(f"""
+        <div style="border-left:3px solid {C['navy']}; padding:10px 16px; margin-top:8px;
+                    background:{C['white']}; border-radius:4px; font-size:14px;">
+          <ul style="margin:0; padding-left:18px; color:{C['black']};">{bullets}</ul>
+        </div>""", unsafe_allow_html=True)
+
+    # ════════════════════════════════════
+    # UNGROUPED CHARTS
+    # ════════════════════════════════════
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(f"""<hr style="border:none; border-top:1px solid {C['grey']}; margin:8px 0 16px 0;">""", unsafe_allow_html=True)
 
     col5, col6 = st.columns(2)
 
@@ -452,20 +497,20 @@ with tab1:
         fig5.add_trace(go.Scatter(
             x=rics_plot["Quarter"], y=rics_plot["Tenant demand London"],
             name="Tenant demand — London", line=dict(color=C["blue"], width=2),
-            hovertemplate="%{x}: %{y:.1f}<extra>Tenant demand — London</extra>"))
+            hovertemplate="%{x}: %{y:.0f}<extra>Tenant demand — London</extra>"))
         fig5.add_trace(go.Scatter(
             x=rics_plot["Quarter"], y=rics_plot["Landlord instr London"],
             name="Landlord instructions — London", line=dict(color=C["pink"], width=2),
-            hovertemplate="%{x}: %{y:.1f}<extra>Landlord instructions — London</extra>"))
+            hovertemplate="%{x}: %{y:.0f}<extra>Landlord instructions — London</extra>"))
         if eng_toggle:
             fig5.add_trace(go.Scatter(
                 x=rics_plot["Quarter"], y=rics_plot["Tenant demand EW"],
                 name="Tenant demand — E&W", line=dict(color=C["lightblue"], width=2, dash="dot"),
-                hovertemplate="%{x}: %{y:.1f}<extra>Tenant demand — E&W</extra>"))
+                hovertemplate="%{x}: %{y:.0f}<extra>Tenant demand — E&W</extra>"))
             fig5.add_trace(go.Scatter(
                 x=rics_plot["Quarter"], y=rics_plot["Landlord instr EW"],
                 name="Landlord instr. — E&W", line=dict(color=C["yellow"], width=2, dash="dot"),
-                hovertemplate="%{x}: %{y:.1f}<extra>Landlord instr. — E&W</extra>"))
+                hovertemplate="%{x}: %{y:.0f}<extra>Landlord instr. — E&W</extra>"))
         fig5.add_hline(y=0, line=dict(color=C["black"], width=1))
         fig5.update_layout(height=380, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
@@ -493,11 +538,11 @@ with tab1:
     st.markdown("### Data Table — Market Monitoring")
     monitor_df = pd.DataFrame([
         ["HomeLet Rental Index",           "Avg. asking rent (London)",       f"£{int(latest_rent):,} pcm",                 "—", rent_date,                      "Monthly"],
-        ["Rightmove Rental Price Tracker", "Annual rent change — London",     f"{rm_tracker['London'].iloc[-1]:+.1f}%",      "—", rm_tracker["Quarter"].iloc[-1], "Quarterly"],
-        ["ONS Price Index of Priv Rent",   "Annual rent change (London)",     f"{latest_pipr:+.1f}%",                        "—", pipr_date,                      "Monthly"],
-        ["RICS",                           "Landlord instr. sentiment (Lon)", f"{latest_rics:.1f}",                          "—", rics_q,                         "Quarterly"],
-        ["MHCLG Homelessness Stats",       "Prevention duty cases (London)",  f"{latest_homeless:,}",                        "—", homeless_q,                     "Quarterly"],
-        ["Met Police (FOI)",               "Illegal eviction cases (London)", str(eviction_latest),                          "—", eviction_year,                  "One-off"],
+        ["Rightmove Rental Price Tracker", "Annual rent change — London",     f"{rm_tracker['London'].iloc[-1]:+.1f}%",   "—", rm_tracker["Quarter"].iloc[-1], "Quarterly"],
+        ["ONS Price Index of Priv Rent",   "Annual rent change (London)",     f"{latest_pipr:+.1f}%",                       "—", pipr_date,                      "Monthly"],
+        ["RICS",                           "Landlord instr. sentiment (Lon)", f"{latest_rics:.0f}",                         "—", rics_q,                         "Quarterly"],
+        ["MHCLG Homelessness Stats",       "Prevention duty cases (London)",  f"{latest_homeless:,}",                       "—", homeless_q,                     "Quarterly"],
+        ["Met Police (FOI)",               "Illegal eviction cases (London)", str(eviction_latest),                         "—", eviction_year,                  "One-off"],
     ], columns=["Source", "Metric", "London", "England/UK", "Period", "Frequency"])
     if not eng_toggle:
         monitor_df["England/UK"] = "—"
@@ -546,7 +591,7 @@ with tab2:
                 x=hh["ehsyear"], y=(hh[tenure_col] * 100).round(1),
                 name=label, line=dict(color=color, width=2),
                 mode="lines+markers", marker=dict(size=6),
-                hovertemplate=f"%{{x}}: %{{y:.1f}}%<extra>{label}</extra>"))
+                hovertemplate=f"%{{x}}: %{{y:.0f}}%<extra>{label}</extra>"))
         fig_tenure.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             yaxis=dict(ticksuffix="%", rangemode="tozero"),
@@ -555,13 +600,6 @@ with tab2:
         fig_tenure.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
         fig_tenure.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig_tenure, use_container_width=True)
-        if COMMENTARY.get("household"):
-            bullets = "".join(f"<li>{b}</li>" for b in COMMENTARY["household"])
-            st.markdown(f"""
-            <div style="border-left:3px solid {C['navy']}; padding:8px 14px; margin-top:-8px;
-                background:{C['white']}; border-radius:4px; font-size:14px;">
-            <ul style="margin:0; padding-left:18px; color:{C['black']};">{bullets}</ul>
-            </div>""", unsafe_allow_html=True)
 
     with col_narrow:
         st.markdown("**Cat 1 Hazards (% PRS)** — English Housing Survey")
@@ -570,7 +608,7 @@ with tab2:
             x=hz_prs["ehsyear"], y=(hz_prs["rate"] * 100).round(1),
             line=dict(color=C["pink"], width=2), mode="lines+markers",
             marker=dict(size=7),
-            hovertemplate="%{x}: %{y:.1f}%<extra></extra>"))
+            hovertemplate="%{x}: %{y:.0f}%<extra>Cat 1 Hazard rate</extra>"))
         fig_hz.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             yaxis=dict(ticksuffix="%", rangemode="tozero"), showlegend=False)
@@ -598,17 +636,10 @@ with tab2:
             values=(guar_plot["pct"] * 100).round(1),
             marker=dict(colors=pie_colors, line=dict(color=C["white"], width=2)),
             textinfo="label+percent", textfont=dict(size=11), hole=0.35,
-            hovertemplate="%{label}: %{value:.1f}%<extra></extra>"))
+            hovertemplate="%{label}: %{value:.0f}%<extra></extra>"))
         fig_pie.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=7),
             paper_bgcolor=C["white"], showlegend=False)
         st.plotly_chart(fig_pie, use_container_width=True)
-        if COMMENTARY.get("guarantor"):
-            bullets = "".join(f"<li>{b}</li>" for b in COMMENTARY["guarantor"])
-            st.markdown(f"""
-            <div style="border-left:3px solid {C['navy']}; padding:8px 14px; margin-top:-8px;
-                background:{C['white']}; border-radius:4px; font-size:14px;">
-            <ul style="margin:0; padding-left:18px; color:{C['black']};">{bullets}</ul>
-            </div>""", unsafe_allow_html=True)
 
     with col_stay:
         st.markdown("**Length of Current Stay — Private Renters (%)** — English Housing Survey")
@@ -625,7 +656,7 @@ with tab2:
             fig_stay.add_trace(go.Bar(
                 x=los["ehsyear"], y=(los[col_key] * 100).round(1),
                 name=label, marker_color=color,
-                hovertemplate=f"%{{x}}: %{{y:.1f}}%<extra></extra>"))
+                hovertemplate=f"%{{x}}: %{{y:.0f}}%<extra>{label}</extra>"))
         fig_stay.update_layout(barmode="stack", height=270,
             margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
@@ -642,7 +673,7 @@ with tab2:
         st.markdown("**Landlord Type** — English Private Landlord Survey, 2024")
         fig_lt = px.bar(lt, x="pct_pct", y="Type_short", orientation="h",
             color_discrete_sequence=[C["blue"]])
-        fig_lt.update_traces(hovertemplate="%{y}: %{x:.1f}%<extra></extra>")
+        fig_lt.update_traces(hovertemplate="%{y}: %{x:.0f}%<extra></extra>")
         fig_lt.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             xaxis_ticksuffix="%", showlegend=False, xaxis_title="", yaxis_title="")
@@ -654,20 +685,13 @@ with tab2:
         st.markdown("**Portfolio Size** — English Private Landlord Survey, 2024")
         fig_pt = px.bar(pt, x="pct_pct", y="Size_short", orientation="h",
             color_discrete_sequence=[C["purple"]])
-        fig_pt.update_traces(hovertemplate="%{y}: %{x:.1f}%<extra></extra>")
+        fig_pt.update_traces(hovertemplate="%{y}: %{x:.0f}%<extra></extra>")
         fig_pt.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             xaxis_ticksuffix="%", showlegend=False, xaxis_title="", yaxis_title="")
         fig_pt.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
         fig_pt.update_yaxes(showgrid=False)
         st.plotly_chart(fig_pt, use_container_width=True)
-        if COMMENTARY.get("portfolio"):
-            bullets = "".join(f"<li>{b}</li>" for b in COMMENTARY["portfolio"])
-            st.markdown(f"""
-            <div style="border-left:3px solid {C['navy']}; padding:8px 14px; margin-top:-8px;
-                background:{C['white']}; border-radius:4px; font-size:14px;">
-            <ul style="margin:0; padding-left:18px; color:{C['black']};">{bullets}</ul>
-            </div>""", unsafe_allow_html=True)
 
     with col3:
         st.markdown("**Illegal Eviction Cases** — Met Police")
@@ -675,7 +699,7 @@ with tab2:
         fig_ev.add_trace(go.Bar(
             x=eviction_df["Year"], y=eviction_df["Cases"],
             marker_color=C["yellow"],
-            hovertemplate="%{x}: %{y:.0f}%<extra></extra>"))
+            hovertemplate="%{x}: %{y:.0f}<extra>Cases</extra>"))
         fig_ev.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"], showlegend=False)
         fig_ev.update_xaxes(showgrid=False)
