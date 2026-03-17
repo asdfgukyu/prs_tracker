@@ -251,7 +251,7 @@ def load_all_data(path):
     for c in ["0-1yr", "2yr", "3-4yr", "5-9yr", "10+yr"]:
         los[c] = pd.to_numeric(los[c], errors="coerce")
 
-    # ── Spareroom number of searchers and rooms to let in London(Spare) ──────────────────
+    # ── Spareroom number of searchers and rooms to let in London(Spareroom) ──────────────────
     sr_df = xl["Spareroom Demand Supply"]
     sr = sr_df.iloc[7:].copy()
     sr.columns = ["_drop", "date", "Rooms to rent", "People searching"]
@@ -264,10 +264,18 @@ def load_all_data(path):
     for c in ["Rooms to rent", "People searching", "Rooms to rent (smoothed)", "People searching (smoothed)"]:
         sr[c] = pd.to_numeric(sr[c], errors="coerce").fillna(0)
 
-    return hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los, sr
+    # ── Repossession in London (MOJ) ──────────────────
+    rep_df = xl["Repossessions"].iloc[7:].copy()
+    rep = rep_df.iloc[7:].copy()
+    rep.columns = ["_drop", "Quarter", "Accelerated landlord", "Mortgage", "Private landlord", "Social landlord"]
+    rep = rep.dropna(subset=["Quarter"]).reset_index(drop=True)
+    for c in ["Accelerated landlord", "Mortgage", "Private landlord", "Social landlord"]:
+        rep[c] = pd.to_numeric(rep[c], errors="coerce").fillna(0)
+
+    return hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los, sr, rep
 
 
-hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los, sr  = load_all_data(XLSX_PATH)
+hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los, sr, rep = load_all_data(XLSX_PATH)
 
 # ── Derived KPIs ──────────────────────────────────────────────────
 latest_rent      = hom["Greater London"].iloc[-1]
@@ -345,9 +353,10 @@ with st.expander("📋 Key legislative changes introduced by the Renters' Rights
 
 eng_toggle = st.toggle("Show England / UK comparison", value=False)
 
-tab1, tab2 = st.tabs([
+tab1, tab2, tab3 = st.tabs([
     "📊 Market Monitoring — Quarterly / Monthly",
-    "📋 Sector Context — Annual / One-off"
+    "📋 Sector Context — Annual / One-off",
+    "👥 Demographic Context"
 ])
 
 # ════════════════════════════════════════════════════════════════
@@ -641,6 +650,8 @@ with tab1:
             name="People searching", line=dict(color=C["pink"], width=2),
             hovertemplate="%{x|%b %Y}: %{y:,.0f}<extra>People searching</extra>"))
         fig7.add_hline(y=0, line=dict(color=C["black"], width=1))
+        add_reference_lines_date(fig7)
+
         fig7.update_layout(height=380, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
             legend=dict(font=dict(size=11), orientation="h",
@@ -694,9 +705,9 @@ with tab2:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    col_wide, col_narrow = st.columns([3, 1])
+    hh_tenure, hazard, repossession = st.columns(3)
 
-    with col_wide:
+    with hh_tenure:
         st.markdown("**Households by tenure (%)** — English Housing Survey")
         fig_tenure = go.Figure()
         for tenure_col, label, color in [
@@ -718,7 +729,7 @@ with tab2:
         fig_tenure.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig_tenure, use_container_width=True)
 
-    with col_narrow:
+    with hazard:
         st.markdown("**Cat 1 Hazards (% PRS)** — English Housing Survey")
         fig_hz = go.Figure()
         fig_hz.add_trace(go.Scatter(
@@ -732,6 +743,40 @@ with tab2:
         fig_hz.update_xaxes(showgrid=True, gridcolor=C["offwhite"], tickangle=45)
         fig_hz.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig_hz, use_container_width=True)
+
+    with repossession:
+        st.markdown("**Number of repossessions** — Ministry of Justice")
+        fig_rep = go.Figure()
+        rd_colors = [C["blue"], C["pink"], C["yellow"], C["green"]]
+        fig_rep.add_trace(go.Scatter(
+            x=rep["Quarter"], y=(rep["Accelerated landlord"]),
+            name="Accelerated landlord", line=dict(color=rd_colors[0], width=2),
+            mode="lines", marker=dict(size=6),
+            hovertemplate=f"%{{x}}: %{{y:.0f}}%<extra>Accelerated landlord</extra>"))
+        fig_rep.add_trace(go.Scatter(
+            x=rep["Quarter"], y=(rep["Mortgage"]),
+            name="Mortgage", line=dict(color=rd_colors[1], width=2),
+            mode="lines", marker=dict(size=6),
+            hovertemplate=f"%{{x}}: %{{y:.0f}}%<extra>Mortgage</extra>"))
+        fig_rep.add_trace(go.Scatter(
+            x=rep["Quarter"], y=(rep["Private landlord"]),
+            name="Private landlord", line=dict(color=rd_colors[2], width=2),
+            mode="lines", marker=dict(size=6),
+            hovertemplate=f"%{{x}}: %{{y:.0f}}%<extra>Private landlord</extra>"))
+        fig_rep.add_trace(go.Scatter(
+            x=rep["Quarter"], y=(rep["Social landlord"]),
+            name="Social landlord", line=dict(color=rd_colors[3], width=2),
+            mode="lines", marker=dict(size=6),
+            hovertemplate=f"%{{x}}: %{{y:.0f}}%<extra>Social landlord</extra>"))
+        fig_rep.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=0),
+            paper_bgcolor=C["white"], plot_bgcolor=C["white"],
+            yaxis=dict(ticksuffix="%", rangemode="tozero"),
+            legend=dict(font=dict(size=11), orientation="h",
+                yanchor="bottom", y=1.02, xanchor="left", x=0))
+        fig_rep.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
+        fig_rep.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
+        st.plotly_chart(fig_rep, use_container_width=True)
+
 
     col_pie, col_stay = st.columns([1, 2])
 
@@ -835,3 +880,12 @@ with tab2:
     if not eng_toggle:
         context_df["England"] = "—"
     st.dataframe(context_df, use_container_width=True, hide_index=True)
+
+
+with tab3:
+    st.markdown(
+        "### Demographic Context &nbsp;"
+        "<span class='section-badge' style='background:#DDCC7722;color:#997700;"
+        "border:1px solid #DDCC77'>Coming Soon</span>",
+        unsafe_allow_html=True
+    )
