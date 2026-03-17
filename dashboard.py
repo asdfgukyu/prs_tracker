@@ -95,8 +95,7 @@ def load_all_data(path):
 
     # ── Rightmove rental supply (14-day listings) ────────────────
     rm = xl["Rental supply rightmove"].iloc[8:].copy()
-    rm.columns = ["_drop", "Date", "Day", "24h", "7d", "14d", "Any",
-                  "24h_b", "7d_b", "14d_b", "Any_b"]
+    rm.columns = ["_drop", "Date", "Day", "24h", "7d", "14d", "Any"]
     rm = rm.dropna(subset=["Date"])
     rm["Date"] = pd.to_datetime(rm["Date"], errors="coerce")
     rm = rm.dropna(subset=["Date"]).sort_values("Date").reset_index(drop=True)
@@ -233,7 +232,7 @@ def load_all_data(path):
 
     # ── Households in PRS (EHS, London rates) ────────────────────
     hh_df = xl["Households in PRS"]
-    hh = hh_df.iloc[8:24].copy()
+    hh = hh_df.iloc[8:].copy()
     hh.columns = ["_drop", "ehsyear", "owners", "social", "prs"]
     hh = hh.dropna(subset=["ehsyear"]).reset_index(drop=True)
     hh = hh[hh["ehsyear"].astype(str).str.match(r"^\d{4}", na=False)].copy()
@@ -243,19 +242,32 @@ def load_all_data(path):
 
     # ── Length of stay (private renters, London) ──────────────────
     los_df = xl["Length of stay"]
-    los = los_df.iloc[8:20].copy()
+    los = los_df.iloc[8:].copy()
     los.columns = ["_drop", "ehsyear", "0-1yr", "2yr", "3-4yr", "5-9yr", "10+yr",
-                   "_r0", "_r1", "_r2", "_r3", "_r4", "_x1", "_x2"]
+                   "_r0", "_r1", "_r2", "_r3", "_r4"]
     los = los.dropna(subset=["ehsyear"]).reset_index(drop=True)
     los = los[los["ehsyear"].astype(str).str.match(r"^\d{4}", na=False)].copy()
     los["ehsyear"] = los["ehsyear"].astype(int).astype(str)
     for c in ["0-1yr", "2yr", "3-4yr", "5-9yr", "10+yr"]:
         los[c] = pd.to_numeric(los[c], errors="coerce")
 
-    return hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los
+    # ── Spareroom number of searchers and rooms to let in London(Spare) ──────────────────
+    sr_df = xl["Spareroom Demand Supply"]
+    sr = sr_df.iloc[7:].copy()
+    sr.columns = ["_drop", "date", "Rooms to rent", "People searching"]
+    sr = sr.dropna(subset=["date"]).reset_index(drop=True)
+    sr["date"] = pd.to_datetime(sr["date"], errors="coerce")
+    sr = sr.dropna(subset=["date"]).sort_values("date").reset_index(drop=True)
+    sr = sr.sort_values("date").reset_index(drop=True)
+    sr["Rooms to rent (smoothed)"] = sr["Rooms to rent"].rolling(window=3, center=True).mean()
+    sr["People searching (smoothed)"] = sr["People searching"].rolling(window=3, center=True).mean()
+    for c in ["Rooms to rent", "People searching", "Rooms to rent (smoothed)", "People searching (smoothed)"]:
+        sr[c] = pd.to_numeric(sr[c], errors="coerce").fillna(0)
+
+    return hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los, sr
 
 
-hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los = load_all_data(XLSX_PATH)
+hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los, sr  = load_all_data(XLSX_PATH)
 
 # ── Derived KPIs ──────────────────────────────────────────────────
 latest_rent      = hom["Greater London"].iloc[-1]
@@ -570,7 +582,7 @@ with tab1:
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(f"""<hr style="border:none; border-top:1px solid {C['grey']}; margin:8px 0 16px 0;">""", unsafe_allow_html=True)
 
-    col5, col6 = st.columns(2)
+    col5, col6, col7 = st.columns(3)
 
     with col5:
         st.markdown("**Tenant Demand & Landlord Instructions** — RICS UK Residential Market Survey")
@@ -617,18 +629,41 @@ with tab1:
         fig6.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig6, use_container_width=True)
 
-    st.markdown("### Data Table — Market Monitoring")
-    monitor_df = pd.DataFrame([
-        ["HomeLet Rental Index",           "Avg. asking rent (London)",       f"£{int(latest_rent):,} pcm",                 "—", rent_date,                      "Monthly"],
-        ["Rightmove Rental Price Tracker", "Annual rent change — London",     f"{rm_tracker['London'].iloc[-1]:+.1f}%",   "—", rm_tracker["Quarter"].iloc[-1], "Quarterly"],
-        ["ONS Price Index of Priv Rent",   "Annual rent change (London)",     f"{latest_pipr:+.1f}%",                       "—", pipr_date,                      "Monthly"],
-        ["RICS",                           "Landlord instr. sentiment (Lon)", f"{latest_rics:.0f}",                         "—", rics_q,                         "Quarterly"],
-        ["MHCLG Homelessness Stats",       "Prevention duty cases (London)",  f"{latest_homeless:,}",                       "—", homeless_q,                     "Quarterly"],
-        ["Met Police (FOI)",               "Illegal eviction cases (London)", str(eviction_latest),                         "—", eviction_year,                  "One-off"],
-    ], columns=["Source", "Metric", "London", "England/UK", "Period", "Frequency"])
-    if not eng_toggle:
-        monitor_df["England/UK"] = "—"
-    st.dataframe(monitor_df, use_container_width=True, hide_index=True)
+    with col7:
+        st.markdown("**Supply of and demand for rooms in London** — SpareRoom via GLA")
+        fig7 = go.Figure()
+        fig7.add_trace(go.Scatter(
+            x=sr["date"], y=sr["Rooms to rent (smoothed)"],
+            name="Rooms to rent", line=dict(color=C["blue"], width=2),
+            hovertemplate="%{x|%b %Y}: %{y:,.0f}<extra>Rooms to rent</extra>"))
+        fig7.add_trace(go.Scatter(
+            x=sr["date"], y=sr["People searching (smoothed)"],
+            name="People searching", line=dict(color=C["pink"], width=2),
+            hovertemplate="%{x|%b %Y}: %{y:,.0f}<extra>People searching</extra>"))
+        fig7.add_hline(y=0, line=dict(color=C["black"], width=1))
+        fig7.update_layout(height=380, margin=dict(l=0, r=0, t=10, b=0),
+            paper_bgcolor=C["white"], plot_bgcolor=C["white"],
+            legend=dict(font=dict(size=11), orientation="h",
+                yanchor="bottom", y=1.02, xanchor="left", x=0))
+        fig7.update_xaxes(showgrid=True, gridcolor=C["offwhite"], tickangle=45, nticks=20)
+        fig7.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
+        st.plotly_chart(fig7, use_container_width=True)
+
+
+
+
+    # st.markdown("### Data Table — Market Monitoring")
+    # monitor_df = pd.DataFrame([
+    #     ["HomeLet Rental Index",           "Avg. asking rent (London)",       f"£{int(latest_rent):,} pcm",                 "—", rent_date,                      "Monthly"],
+    #     ["Rightmove Rental Price Tracker", "Annual rent change — London",     f"{rm_tracker['London'].iloc[-1]:+.1f}%",   "—", rm_tracker["Quarter"].iloc[-1], "Quarterly"],
+    #     ["ONS Price Index of Priv Rent",   "Annual rent change (London)",     f"{latest_pipr:+.1f}%",                       "—", pipr_date,                      "Monthly"],
+    #     ["RICS",                           "Landlord instr. sentiment (Lon)", f"{latest_rics:.0f}",                         "—", rics_q,                         "Quarterly"],
+    #     ["MHCLG Homelessness Stats",       "Prevention duty cases (London)",  f"{latest_homeless:,}",                       "—", homeless_q,                     "Quarterly"],
+    #     ["Met Police (FOI)",               "Illegal eviction cases (London)", str(eviction_latest),                         "—", eviction_year,                  "One-off"],
+    # ], columns=["Source", "Metric", "London", "England/UK", "Period", "Frequency"])
+    # if not eng_toggle:
+    #     monitor_df["England/UK"] = "—"
+    # st.dataframe(monitor_df, use_container_width=True, hide_index=True)
 
 
 # ════════════════════════════════════════════════════════════════
