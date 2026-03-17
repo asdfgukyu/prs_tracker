@@ -403,6 +403,15 @@ with tab1:
             line=dict(color=C["pink"], width=2),
             hovertemplate="%{x|%b %Y}: %{y:.0f}%<extra>ONS PIPR — London</extra>"))
 
+        # ONS — England only with eng_toggle
+        if eng_toggle:
+            fig_rpi.add_trace(go.Scatter(
+                x=pipr_2020["Date"], y=pipr_2020["England"],
+                name="England",
+                legendgroup="ons",
+                line=dict(color=C["lightblue"], width=1.5),
+                hovertemplate="%{x|%b %Y}: %{y:.0f}%<extra>England</extra>"))
+
         # Rightmove — all London geographies grouped, each visible in legend
         for series, color, width in [
             ("London",       C["blue"],   2.0),
@@ -423,9 +432,9 @@ with tab1:
             fig_rpi.add_trace(go.Scatter(
                 x=rm_2020["Date"], y=rm_2020["Rest of Britain"],
                 name="Rightmove — Rest of Britain",
-                legendgroup="rightmove_rob",
-                line=dict(color=C["green"], width=1.5, dash="dot"),
-                hovertemplate="%{x|%b %Y}: %{y:.0f}%<extra>Rightmove — Rest of Britain</extra>"))
+                legendgroup="rightmove",
+                line=dict(color=C["lightblue"], width=1.5, dash="dot"),
+                hovertemplate="%{x|%b %Y}: %{y:.0f}%<extra>Rest of Britain</extra>"))
 
         # HomeLet — London always visible
         fig_rpi.add_trace(go.Scatter(
@@ -476,7 +485,7 @@ with tab1:
 
     prev_duty, rel_duty, s21_duty = st.columns(3)
     with prev_duty:
-        st.markdown("**Homeless Prevention Duty by Reason** — MHCLG")
+        st.markdown("**Prevention Duty by Reason** — MHCLG")
         hp_colors = [C["blue"], C["purple"], C["lightblue"], C["yellow"],
                     C["pink"], C["green"], C["navy"], C["grey"]]
         hp_labels = {
@@ -504,7 +513,7 @@ with tab1:
         st.plotly_chart(fig_prev, use_container_width=True)
     
     with rel_duty:
-        st.markdown("**Homeless Relief Duty by Reason** — MHCLG")
+        st.markdown("**Relief Duty by Reason** — MHCLG")
         rd_colors = [C["blue"], C["purple"], C["lightblue"], C["yellow"],
                     C["pink"], C["green"], C["navy"], C["grey"]]
         rd_labels = {
