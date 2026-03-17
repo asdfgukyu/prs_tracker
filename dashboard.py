@@ -493,7 +493,7 @@ with tab1:
                 fig_prev.add_trace(go.Bar(
                     x=hp["Quarter"], y=hp[col_key],
                     name=label, marker_color=color,
-                    visible="legendonly" if col_key == "Other reasons" else True,
+                    # visible="legendonly" if col_key == "Other reasons" else True,
                     hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label}</extra>"))
         fig_prev.update_layout(barmode="stack", height=280,
             margin=dict(l=0, r=0, t=10, b=0),
@@ -521,7 +521,7 @@ with tab1:
                 fig_rel.add_trace(go.Bar(
                     x=rd["Quarter"], y=rd[col_key],
                     name=label, marker_color=color,
-                    visible="legendonly" if col_key == "Other reasons" else True,
+                    # visible="legendonly" if col_key == "Other reasons" else True,
                     hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label}</extra>"))
         fig_rel.update_layout(barmode="stack", height=280,
             margin=dict(l=0, r=0, t=10, b=0),
