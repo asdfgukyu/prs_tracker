@@ -122,7 +122,7 @@ def load_all_data(path):
                   "Tenant abandoned", "Other"]
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
     hp["Date"] = pd.to_datetime(hp["Date"], errors="coerce")
-    for col in ["Total rent arrears", "Rent arrears (rent increase)", "Sell property",
+    for col in ["Total rent arrears", "Sell property",
                 "Re-let property", "Retire", "Disrepair complaint",
                 "Illegal eviction", "Tenant abandoned", "Other"]:
         hp[col] = pd.to_numeric(hp[col], errors="coerce").fillna(0)
@@ -150,7 +150,7 @@ def load_all_data(path):
         rd[col] = pd.to_numeric(rd[col], errors="coerce").fillna(0)
     # Lump Retire, Tenant abandoned and Other into one category
     rd["Other reasons"] = rd["Retire"] + rd["Tenant abandoned"] + rd["Other"]
-    RD_BANDS = ["Total rent arrears", "Rent arrears (rent increase)",
+    RD_BANDS = ["Total rent arrears",
                 "Sell property", "Re-let property",
                 "Disrepair complaint", "Illegal eviction", "Other reasons"]
     rd["Total"] = rd[RD_BANDS].sum(axis=1)
