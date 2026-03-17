@@ -256,7 +256,6 @@ def load_all_data(path):
 
 
 hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los = load_all_data(XLSX_PATH)
-load_all_data.clear()
 
 # ── Derived KPIs ──────────────────────────────────────────────────
 latest_rent      = hom["Greater London"].iloc[-1]
