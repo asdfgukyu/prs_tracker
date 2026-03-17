@@ -122,6 +122,7 @@ def load_all_data(path):
                   "Tenant abandoned", "Other"]
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
     hp["Date"] = pd.to_datetime(hp["Date"], errors="coerce")
+    hp = hp.dropna(subset=["Date"]).reset_index(drop=True)  # ← ADD THIS: removes rows where Date couldn't parse
     for col in ["Total rent arrears", "Rent arrears (rent increase)", "Sell property",
                 "Re-let property", "Retire", "Disrepair complaint",
                 "Illegal eviction", "Tenant abandoned", "Other"]:
@@ -144,6 +145,7 @@ def load_all_data(path):
                   "Tenant abandoned", "Other"]
     rd = rd.dropna(subset=["Date"]).reset_index(drop=True)
     rd["Date"] = pd.to_datetime(rd["Date"], errors="coerce")
+    rd = rd.dropna(subset=["Date"]).reset_index(drop=True)  # ← ADD THIS: removes rows where Date couldn't parse
     for col in ["Total rent arrears", "Rent arrears (rent increase)", "Sell property",
                 "Re-let property", "Retire", "Disrepair complaint",
                 "Illegal eviction", "Tenant abandoned", "Other"]:
