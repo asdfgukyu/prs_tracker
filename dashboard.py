@@ -122,15 +122,15 @@ def load_all_data(path):
                   "Tenant abandoned", "Other"]
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
     hp["Date"] = pd.to_datetime(hp["Date"], errors="coerce")
-    for col in ["Total rent arrears", "Sell property",
+    for col in ["Total rent arrears", "Rent arrears (rent increase)", "Sell property",
                 "Re-let property", "Retire", "Disrepair complaint",
                 "Illegal eviction", "Tenant abandoned", "Other"]:
         hp[col] = pd.to_numeric(hp[col], errors="coerce").fillna(0)
     # Lump Retire, Tenant abandoned and Other into one category
-    hp["Other reasons"] = hp["Retire"] + hp["Tenant abandoned"] + hp["Other"]
+    hp["Other"] = hp["Retire"] + hp["Tenant abandoned"] + hp["Other"]
     HP_BANDS = ["Total rent arrears", "Rent arrears (rent increase)",
                 "Sell property", "Re-let property",
-                "Disrepair complaint", "Illegal eviction", "Other reasons"]
+                "Disrepair complaint", "Illegal eviction", "Other"]
     hp["Total"] = hp[HP_BANDS].sum(axis=1)
     hp["Quarter"] = hp["Date"].dt.to_period("Q").astype(str)
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
@@ -149,10 +149,10 @@ def load_all_data(path):
                 "Illegal eviction", "Tenant abandoned", "Other"]:
         rd[col] = pd.to_numeric(rd[col], errors="coerce").fillna(0)
     # Lump Retire, Tenant abandoned and Other into one category
-    rd["Other reasons"] = rd["Retire"] + rd["Tenant abandoned"] + rd["Other"]
+    rd["Other"] = rd["Retire"] + rd["Tenant abandoned"] + rd["Other"]
     RD_BANDS = ["Total rent arrears",
                 "Sell property", "Re-let property",
-                "Disrepair complaint", "Illegal eviction", "Other reasons"]
+                "Disrepair complaint", "Illegal eviction", "Other"]
     rd["Total"] = rd[RD_BANDS].sum(axis=1)
     rd["Quarter"] = rd["Date"].dt.to_period("Q").astype(str)
     rd = rd.dropna(subset=["Date"]).reset_index(drop=True)
@@ -256,6 +256,7 @@ def load_all_data(path):
 
 
 hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los = load_all_data(XLSX_PATH)
+load_all_data.clear()
 
 # ── Derived KPIs ──────────────────────────────────────────────────
 latest_rent      = hom["Greater London"].iloc[-1]
@@ -486,14 +487,14 @@ with tab1:
         "Re-let property":              "Landlord re-letting",
         "Disrepair complaint":          "Tenant complained about disrepair",
         "Illegal eviction":             "Illegal eviction",
-        "Other reasons":                "Other",
+        "Other":                        "Other",
     }
         fig_prev = go.Figure()
         for (col_key, label), color in zip(hp_labels.items(), hp_colors):
                 fig_prev.add_trace(go.Bar(
                     x=hp["Quarter"], y=hp[col_key],
                     name=label, marker_color=color,
-                    visible="legendonly" if col_key == "Other reasons" else True,
+                    visible="legendonly" if col_key == "Other" else True,
                     hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label}</extra>"))
         fig_prev.update_layout(barmode="stack", height=280,
             margin=dict(l=0, r=0, t=10, b=0),
@@ -514,14 +515,14 @@ with tab1:
         "Re-let property":              "Landlord re-letting",
         "Disrepair complaint":          "Tenant complained about disrepair",
         "Illegal eviction":             "Illegal eviction",
-        "Other reasons":                "Other",
+        "Other":                        "Other",
     }
         fig_rel = go.Figure()
         for (col_key, label), color in zip(rd_labels.items(), rd_colors):
                 fig_rel.add_trace(go.Bar(
                     x=rd["Quarter"], y=rd[col_key],
                     name=label, marker_color=color,
-                    visible="legendonly" if col_key == "Other reasons" else True,
+                    visible="legendonly" if col_key == "Other" else True,
                     hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label}</extra>"))
         fig_rel.update_layout(barmode="stack", height=280,
             margin=dict(l=0, r=0, t=10, b=0),
