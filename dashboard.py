@@ -116,13 +116,13 @@ def load_all_data(path):
     # ── Prevention duty by reason ─────────────────────────────────
     hp = xl["Prevention duty by reason"].iloc[7:].copy()
     hp.columns = ["_drop", "Date", "Region",
-                  "Rent arrears", "Rent arrears (rent increase)",
+                  "Total rent arrears", "Rent arrears (rent increase)",
                   "Sell property", "Re-let property", "Retire",
                   "Disrepair complaint", "Illegal eviction",
                   "Tenant abandoned", "Other"]
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
     hp["Date"] = pd.to_datetime(hp["Date"], errors="coerce")
-    HP_BANDS = ["Rent arrears", "Rent arrears (rent increase)",
+    HP_BANDS = ["Total rent arrears", "Rent arrears (rent increase)",
                 "Sell property", "Re-let property", "Retire",
                 "Disrepair complaint", "Illegal eviction", "Tenant abandoned"]
     for col in HP_BANDS:
@@ -130,6 +130,37 @@ def load_all_data(path):
     hp["Total"] = hp[HP_BANDS].sum(axis=1)
     hp["Quarter"] = hp["Date"].dt.to_period("Q").astype(str)
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
+
+    # ── Relief duty by reason ─────────────────────────────────
+    rd = xl["Relief duty by reason"].iloc[7:].copy()
+    rd.columns = ["_drop", "Date", "Region",
+                  "Total rent arrears", "Rent arrears (rent increase)",
+                  "Sell property", "Re-let property", "Retire",
+                  "Disrepair complaint", "Illegal eviction",
+                  "Tenant abandoned", "Other"]
+    rd = rd.dropna(subset=["Date"]).reset_index(drop=True)
+    rd["Date"] = pd.to_datetime(rd["Date"], errors="coerce")
+    RD_BANDS = ["Total rent arrears", "Rent arrears (rent increase)",
+                "Sell property", "Re-let property", "Retire",
+                "Disrepair complaint", "Illegal eviction", "Tenant abandoned"]
+    for col in RD_BANDS:
+        rd[col] = pd.to_numeric(rd[col], errors="coerce").fillna(0)
+    rd["Total"] = rd[RD_BANDS].sum(axis=1)
+    rd["Quarter"] = rd["Date"].dt.to_period("Q").astype(str)
+    rd = rd.dropna(subset=["Date"]).reset_index(drop=True)
+
+    # ── S21 Prevention duty ─────────────────────────────────
+    s21 = xl["Prevention duty S21"].iloc[7:].copy()
+    s21.columns = ["_drop", "Date", "Region",
+                    "Prevention duty owed due to S21"]
+    s21 = s21.dropna(subset=["Date"]).reset_index(drop=True)
+    s21["Date"] = pd.to_datetime(s21["Date"], errors="coerce")
+    S21_BANDS = ["Prevention duty owed due to S21"]
+    for col in S21_BANDS:
+        s21[col] = pd.to_numeric(s21[col], errors="coerce").fillna(0)
+    s21["Total"] = s21[S21_BANDS].sum(axis=1)
+    s21["Quarter"] = s21["Date"].dt.to_period("Q").astype(str)
+    s21 =s21.dropna(subset=["Date"]).reset_index(drop=True)
 
     # ── Rightmove Rental Price Tracker (annual % change) ─────────
     rm_tracker = xl["Rightmove Rental Price Tracker"].iloc[7:].copy()
@@ -213,10 +244,10 @@ def load_all_data(path):
     for c in ["0-1yr", "2yr", "3-4yr", "5-9yr", "10+yr"]:
         los[c] = pd.to_numeric(los[c], errors="coerce")
 
-    return hom, hom_change, rm_14d, rm_tracker, pipr, hp, rics, eviction_df, hz_prs, lt, pt, guar, hh, los
+    return hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los
 
 
-hom, hom_change, rm_14d, rm_tracker, pipr, hp, rics, eviction_df, hz_prs, lt, pt, guar, hh, los = load_all_data(XLSX_PATH)
+hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los = load_all_data(XLSX_PATH)
 
 # ── Derived KPIs ──────────────────────────────────────────────────
 latest_rent      = hom["Greater London"].iloc[-1]
@@ -435,18 +466,7 @@ with tab1:
     st.markdown(f"<span style='font-size:15px; font-weight:700; color:{C['navy']}'>Homelessness</span>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    hp_colors = [C["blue"], C["purple"], C["lightblue"], C["yellow"],
-                 C["pink"], C["green"], C["navy"], C["grey"]]
-    hp_labels = {
-        "Rent arrears":                "Total rent arrears",
-        "Rent arrears (rent increase)": "Rent arrears (rent increase)",
-        "Sell property":      "Landlord selling",
-        "Re-let property":    "Landlord re-letting",
-        "Retire":             "Landlord retiring",
-        "Disrepair complaint":"Tenant complained — disrepair",
-        "Illegal eviction":   "Illegal eviction",
-        "Tenant abandoned":   "Tenant abandoned property",
-    }
+
 
     def make_hp_fig(height=280):
         f = go.Figure()
@@ -463,16 +483,78 @@ with tab1:
         f.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         return f
 
-    hcol1, hcol2, hcol3 = st.columns(3)
-    with hcol1:
+    prev_duty, rel_duty, s21_duty = st.columns(3)
+    with prev_duty:
         st.markdown("**Homeless Prevention Duty by Reason** — MHCLG")
-        st.plotly_chart(make_hp_fig(), use_container_width=True, key="hp_fig_1")
-    with hcol2:
-        st.markdown("**Placeholder — replace when data available**")
-        st.plotly_chart(make_hp_fig(), use_container_width=True, key="hp_fig_2")
-    with hcol3:
-        st.markdown("**Placeholder — replace when data available**")
-        st.plotly_chart(make_hp_fig(), use_container_width=True, key="hp_fig_3")
+        hp_colors = [C["blue"], C["purple"], C["lightblue"], C["yellow"],
+                    C["pink"], C["green"], C["navy"], C["grey"]]
+        hp_labels = {
+        "Total rent arrears":           "Total rent arrears",
+        "Rent arrears (rent increase)": "Rent arrears (rent increase)",
+        "Sell property":                "Landlord selling",
+        "Re-let property":              "Landlord re-letting",
+        "Retire":                       "Landlord retiring",
+        "Disrepair complaint":          "Tenant complained — disrepair",
+        "Illegal eviction":             "Illegal eviction",
+        "Tenant abandoned":             "Tenant abandoned property",
+    }
+        fig_prev = go.Figure()
+        for (col_key, label), color in zip(hp_labels.items(), hp_colors):
+                fig_prev.add_trace(go.Bar(
+                    x=hp["Quarter"], y=hp[col_key],
+                    name=label, marker_color=color,
+                    hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label}</extra>"))
+        fig_prev.update_layout(barmode="stack", height=280,
+            margin=dict(l=0, r=0, t=10, b=0),
+            paper_bgcolor=C["white"], plot_bgcolor=C["white"],
+            legend=dict(font=dict(size=9), orientation="v", x=1.01, y=1, xanchor="left"))
+        fig_prev.update_xaxes(showgrid=False)
+        fig_prev.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
+        st.plotly_chart(fig_prev, use_container_width=True)
+    
+    with rel_duty:
+        st.markdown("**Homeless Relief Duty by Reason** — MHCLG")
+        rd_colors = [C["blue"], C["purple"], C["lightblue"], C["yellow"],
+                    C["pink"], C["green"], C["navy"], C["grey"]]
+        rd_labels = {
+        "Total rent arrears":           "Total rent arrears",
+        "Rent arrears (rent increase)": "Rent arrears (rent increase)",
+        "Sell property":                "Landlord selling",
+        "Re-let property":              "Landlord re-letting",
+        "Retire":                       "Landlord retiring",
+        "Disrepair complaint":          "Tenant complained — disrepair",
+        "Illegal eviction":             "Illegal eviction",
+        "Tenant abandoned":             "Tenant abandoned property",
+    }
+        fig_rel = go.Figure()
+        for (col_key, label), color in zip(rd_labels.items(), rd_colors):
+                fig_rel.add_trace(go.Bar(
+                    x=rd["Quarter"], y=rd[col_key],
+                    name=label, marker_color=color,
+                    hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label}</extra>"))
+        fig_rel.update_layout(barmode="stack", height=280,
+            margin=dict(l=0, r=0, t=10, b=0),
+            paper_bgcolor=C["white"], plot_bgcolor=C["white"],
+            legend=dict(font=dict(size=9), orientation="v", x=1.01, y=1, xanchor="left"))
+        fig_rel.update_xaxes(showgrid=False)
+        fig_rel.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
+        st.plotly_chart(fig_rel, use_container_width=True)
+    
+    with s21_duty:
+        st.markdown("**Prevention Duty owed due to S21** — MHCLG")
+        fig_s21 = go.Figure()
+        fig_s21.add_trace(go.Bar(
+            x=s21["Quarter"], y=s21["Total"],
+            name="S21 prevention duty", marker_color=C["pink"],
+            hovertemplate="%{x}: %{y:,.0f}<extra>S21 prevention duty</extra>"))
+        fig_s21.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0),
+            paper_bgcolor=C["white"], plot_bgcolor=C["white"],
+            showlegend=False)
+        fig_s21.update_xaxes(showgrid=False)
+        fig_s21.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
+        st.plotly_chart(fig_s21, use_container_width=True)
+        
+
 
     if COMMENTARY.get("homelessness_notes"):
         bullets = "".join(f"<li style='margin-bottom:6px'>{b}</li>" for b in COMMENTARY["homelessness_notes"])
