@@ -122,11 +122,15 @@ def load_all_data(path):
                   "Tenant abandoned", "Other"]
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
     hp["Date"] = pd.to_datetime(hp["Date"], errors="coerce")
-    HP_BANDS = ["Total rent arrears", "Rent arrears (rent increase)",
-                "Sell property", "Re-let property", "Retire",
-                "Disrepair complaint", "Illegal eviction", "Tenant abandoned"]
-    for col in HP_BANDS:
+    for col in ["Total rent arrears", "Rent arrears (rent increase)", "Sell property",
+                "Re-let property", "Retire", "Disrepair complaint",
+                "Illegal eviction", "Tenant abandoned", "Other"]:
         hp[col] = pd.to_numeric(hp[col], errors="coerce").fillna(0)
+    # Lump Retire, Tenant abandoned and Other into one category
+    hp["Other reasons"] = hp["Retire"] + hp["Tenant abandoned"] + hp["Other"]
+    HP_BANDS = ["Total rent arrears", "Rent arrears (rent increase)",
+                "Sell property", "Re-let property",
+                "Disrepair complaint", "Illegal eviction", "Other reasons"]
     hp["Total"] = hp[HP_BANDS].sum(axis=1)
     hp["Quarter"] = hp["Date"].dt.to_period("Q").astype(str)
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
@@ -140,11 +144,15 @@ def load_all_data(path):
                   "Tenant abandoned", "Other"]
     rd = rd.dropna(subset=["Date"]).reset_index(drop=True)
     rd["Date"] = pd.to_datetime(rd["Date"], errors="coerce")
-    RD_BANDS = ["Total rent arrears", "Rent arrears (rent increase)",
-                "Sell property", "Re-let property", "Retire",
-                "Disrepair complaint", "Illegal eviction", "Tenant abandoned"]
-    for col in RD_BANDS:
+    for col in ["Total rent arrears", "Rent arrears (rent increase)", "Sell property",
+                "Re-let property", "Retire", "Disrepair complaint",
+                "Illegal eviction", "Tenant abandoned", "Other"]:
         rd[col] = pd.to_numeric(rd[col], errors="coerce").fillna(0)
+    # Lump Retire, Tenant abandoned and Other into one category
+    rd["Other reasons"] = rd["Retire"] + rd["Tenant abandoned"] + rd["Other"]
+    RD_BANDS = ["Total rent arrears", "Rent arrears (rent increase)",
+                "Sell property", "Re-let property",
+                "Disrepair complaint", "Illegal eviction", "Other reasons"]
     rd["Total"] = rd[RD_BANDS].sum(axis=1)
     rd["Quarter"] = rd["Date"].dt.to_period("Q").astype(str)
     rd = rd.dropna(subset=["Date"]).reset_index(drop=True)
@@ -466,23 +474,6 @@ with tab1:
     st.markdown(f"<span style='font-size:15px; font-weight:700; color:{C['navy']}'>Homelessness</span>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-
-
-    def make_hp_fig(height=280):
-        f = go.Figure()
-        for (band, label), color in zip(hp_labels.items(), hp_colors):
-            f.add_trace(go.Bar(
-                x=hp["Quarter"], y=hp[band],
-                name=label, marker_color=color,
-                hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label}</extra>"))
-        f.update_layout(barmode="stack", height=height,
-            margin=dict(l=0, r=0, t=10, b=0),
-            paper_bgcolor=C["white"], plot_bgcolor=C["white"],
-            legend=dict(font=dict(size=9), orientation="v", x=1.01, y=1, xanchor="left"))
-        f.update_xaxes(showgrid=False)
-        f.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
-        return f
-
     prev_duty, rel_duty, s21_duty = st.columns(3)
     with prev_duty:
         st.markdown("**Homeless Prevention Duty by Reason** — MHCLG")
@@ -491,18 +482,18 @@ with tab1:
         hp_labels = {
         "Total rent arrears":           "Total rent arrears",
         "Rent arrears (rent increase)": "Rent arrears (rent increase)",
-        "Sell property":                "Landlord selling",
+        "Sell property":                "Landlord wishing to sell",
         "Re-let property":              "Landlord re-letting",
-        "Retire":                       "Landlord retiring",
-        "Disrepair complaint":          "Tenant complained — disrepair",
+        "Disrepair complaint":          "Tenant complained about disrepair",
         "Illegal eviction":             "Illegal eviction",
-        "Tenant abandoned":             "Tenant abandoned property",
+        "Other reasons":                "Other",
     }
         fig_prev = go.Figure()
         for (col_key, label), color in zip(hp_labels.items(), hp_colors):
                 fig_prev.add_trace(go.Bar(
                     x=hp["Quarter"], y=hp[col_key],
                     name=label, marker_color=color,
+                    visible="legendonly" if col_key == "Other reasons" else True,
                     hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label}</extra>"))
         fig_prev.update_layout(barmode="stack", height=280,
             margin=dict(l=0, r=0, t=10, b=0),
@@ -519,18 +510,18 @@ with tab1:
         rd_labels = {
         "Total rent arrears":           "Total rent arrears",
         "Rent arrears (rent increase)": "Rent arrears (rent increase)",
-        "Sell property":                "Landlord selling",
+        "Sell property":                "Landlord wishing to sell",
         "Re-let property":              "Landlord re-letting",
-        "Retire":                       "Landlord retiring",
-        "Disrepair complaint":          "Tenant complained — disrepair",
+        "Disrepair complaint":          "Tenant complained about disrepair",
         "Illegal eviction":             "Illegal eviction",
-        "Tenant abandoned":             "Tenant abandoned property",
+        "Other reasons":                "Other",
     }
         fig_rel = go.Figure()
         for (col_key, label), color in zip(rd_labels.items(), rd_colors):
                 fig_rel.add_trace(go.Bar(
                     x=rd["Quarter"], y=rd[col_key],
                     name=label, marker_color=color,
+                    visible="legendonly" if col_key == "Other reasons" else True,
                     hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label}</extra>"))
         fig_rel.update_layout(barmode="stack", height=280,
             margin=dict(l=0, r=0, t=10, b=0),
