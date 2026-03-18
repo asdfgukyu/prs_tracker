@@ -762,18 +762,17 @@ with tab2:
         for label, color in rep_series:
             fig_rep.add_trace(go.Scatter(
                 x=rep_plot["Quarter"], y=rep_plot[label],
-                name=label,
+                name="London",
                 legendgroup=label,
-                legendgrouptitle=dict(text="London", font=dict(size=10, color=C["navy"])) if label == "Accelerated landlord" else None,
+                legendgrouptitle=dict(text=label, font=dict(size=10, color=C["navy"])),
                 line=dict(color=color, width=2),
                 mode="lines",
                 hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label} — London</extra>"))
         if eng_toggle:
             for label, color in rep_series:
-                eng_label = f"{label} England"
                 fig_rep.add_trace(go.Scatter(
-                    x=rep_plot["Quarter"], y=rep_plot[eng_label],
-                    name=f"{label} — England",
+                    x=rep_plot["Quarter"], y=rep_plot[f"{label} England"],
+                    name="England",
                     legendgroup=label,
                     line=dict(color=color, width=1.5, dash="dot"),
                     mode="lines",
