@@ -1,8 +1,12 @@
+# Dashboard for tracking London PRS market indicators and homelessness trends in the context of the Renters' Rights Act.
+
+# Load libraries
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 
+#Set up HIL colour palette
 # ── Colour palette ──────────────────────────────────────────────
 C = {
     "black":    "#000000",
@@ -28,7 +32,7 @@ COMMENTARY = {
         "The Rightmove tracker reflects asking rents on new listings only — typically a leading indicator",
         "HomeLet captures agreed rents on new tenancies, sitting between the two in terms of coverage",
     ],
-    # Rental Price Indexes — full-width notes below all 3 charts
+    # Rental Price Indexes — to the right of key RPI chart
     "rent_indexes_notes": [
         "All three indices show London rent growth easing from peaks seen in 2022–23",
         "Divergence between indices reflects methodological differences: ONS lags due to inclusion of existing tenancies, while Rightmove moves first as a new-listings measure",
@@ -36,11 +40,9 @@ COMMENTARY = {
     ],
     # Homelessness — full-width notes below all 3 charts
     "homelessness_notes": [
-        "Add homelessness commentary here",
-        "Additional notes from external sources can go here",
+        "Add homelessness commentary here"
     ],
 }
-
 
 # ── Page config ─────────────────────────────────────────────────
 st.set_page_config(
@@ -58,7 +60,7 @@ st.markdown(f"""
       background: {C['white']}; border-radius: 8px; padding: 16px 20px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }}
-  .kpi-value {{ font-size: 28px; font-weight: 700; color: {C['black']}; }}
+  .kpi-value {{ font-size: 28px; font-weight: 700; color: {C['black']}; }}                                                      
   .kpi-title {{ font-size: 12px; font-weight: 600; color: {C['navy']}; text-transform: uppercase; letter-spacing: 0.5px; }}
   .kpi-sub   {{ font-size: 11px; color: #888; margin-top: 4px; }}
   .act-banner {{
@@ -76,21 +78,21 @@ st.markdown(f"""
 # ── Load & parse data ────────────────────────────────────────────
 XLSX_PATH = "PRS_Tracker.xlsx"
 
-@st.cache_data
+@st.cache_data                                                                                  # Cache the loaded data to speed up runs after the first load — will only reload if the file changes
 def load_all_data(path):
     xl = pd.read_excel(path, sheet_name=None, header=None)
 
     # ── HomeLet Rental Index ─────────────────────────────────────
-    hom = xl["Homelet Rental Index"].iloc[7:].copy()
-    hom.columns = ["_drop", "Date", "UK", "Greater London", "UK change", "London change"]
-    hom = hom.dropna(subset=["Date"])
-    hom["Date"] = pd.to_datetime(hom["Date"], errors="coerce")
-    hom = hom.dropna(subset=["Date"]).sort_values("Date").reset_index(drop=True)
+    hom = xl["Homelet Rental Index"].iloc[7:].copy()                                            #select data from row 8 downwards, skipping metadata and headers
+    hom.columns = ["_drop", "Date", "UK", "Greater London", "UK change", "London change"]       #manually assign column names based on the structure of the data in the sheet
+    hom = hom.dropna(subset=["Date"])                                                           #drop any rows where the Date column is missing, as these are not valid data points
+    hom["Date"] = pd.to_datetime(hom["Date"], errors="coerce")                                  #convert the Date column to datetime format
+    hom = hom.dropna(subset=["Date"]).sort_values("Date").reset_index(drop=True)                #drop any rows where the Date conversion failed, sort by date, reset the index
     for c in ["Greater London", "UK", "UK change", "London change"]:
-        hom[c] = pd.to_numeric(hom[c], errors="coerce")
-    hom_change = hom.dropna(subset=["UK change", "London change"]).copy()
-    hom_change = hom_change[hom_change["Date"] >= "2019-01-01"].reset_index(drop=True)
-    hom_change["UK change"] = hom_change["UK change"] * 100
+        hom[c] = pd.to_numeric(hom[c], errors="coerce")                                         #convert the  columns to numeric
+    hom_change = hom.dropna(subset=["UK change", "London change"]).copy()                       #make subset of only change data
+    hom_change = hom_change[hom_change["Date"] >= "2019-01-01"].reset_index(drop=True)          #filter date
+    hom_change["UK change"] = hom_change["UK change"] * 100                                     #convert to %
     hom_change["London change"] = hom_change["London change"] * 100
 
     # ── Rightmove rental supply (14-day listings) ────────────────
@@ -134,7 +136,7 @@ def load_all_data(path):
     hp["Quarter"] = hp["Date"].dt.to_period("Q").astype(str)
     hp = hp.dropna(subset=["Date"]).reset_index(drop=True)
 
-    # ── Relief duty by reason ─────────────────────────────────
+    # ── Relief duty by reason ───────────────────────────────
     rd = xl["Relief duty by reason"].iloc[7:].copy()
     rd.columns = ["_drop", "Date", "Region",
                   "Total rent arrears", "Rent arrears (rent increase)",
@@ -187,7 +189,7 @@ def load_all_data(path):
         rics[c] = pd.to_numeric(rics[c], errors="coerce")
     rics = rics[rics["Quarter"].str[:4] >= "2019"].reset_index(drop=True)
 
-    # ── Met Police illegal evictions (annual totals) ──────────────
+    # ── Met Police illegal evictions (annual totals) ─────────────
     ev = xl["Met Illegal eviction"].iloc[6:].copy()
     ev.columns = ["_drop", "Borough", "2019", "2020", "2021", "2022", "2023"]
     ev = ev.dropna(subset=["Borough"]).reset_index(drop=True)
@@ -198,7 +200,7 @@ def load_all_data(path):
                   for y in ["2019", "2020", "2021", "2022", "2023"]]
     })
 
-    # ── Category 1 hazard (PRS, London) ──────────────────────────
+    # ── Category 1 hazard (PRS, London) ─────────────────────
     hz = xl["Category 1 hazard"].iloc[6:].copy()
     hz.columns = ["_drop", "ehsyear", "london", "tenure3", "not_cat1", "cat1", "rate"]
     hz = hz.dropna(subset=["ehsyear"]).reset_index(drop=True)
@@ -215,7 +217,7 @@ def load_all_data(path):
     lt["Type_short"] = ["Individual", "Company", "Both", "Other"][:len(lt)]
     lt["pct_pct"] = (lt["pct"] * 100).round(1)
 
-    # ── Portfolio size (EPLS 2024) ────────────────────────────────
+    # ── Portfolio size (EPLS 2024) ─────────────────────────────
     pt = xl["Size of portfolio"].iloc[6:].copy()
     pt.columns = ["_drop", "Size", "n", "pct"]
     pt = pt.dropna(subset=["Size"]).reset_index(drop=True)
@@ -230,7 +232,7 @@ def load_all_data(path):
     guar = guar.dropna(subset=["ReqGuaRent"]).reset_index(drop=True)
     guar["pct"] = pd.to_numeric(guar["pct"], errors="coerce")
 
-    # ── Households in PRS (EHS, London rates) ────────────────────
+    # ── Households in PRS (EHS, London rates) ───────────────
     hh_df = xl["Households in PRS"]
     hh = hh_df.iloc[8:].copy()
     hh.columns = ["_drop", "ehsyear", "owners", "social", "prs"]
@@ -251,7 +253,7 @@ def load_all_data(path):
     for c in ["0-1yr", "2yr", "3-4yr", "5-9yr", "10+yr"]:
         los[c] = pd.to_numeric(los[c], errors="coerce")
 
-    # ── Spareroom number of searchers and rooms to let in London(Spareroom) ──────────────────
+    # ── Spareroom number of searchers and rooms to let in London(Spareroom) ─────────────
     sr_df = xl["Spareroom Demand Supply"]
     sr = sr_df.iloc[7:].copy()
     sr.columns = ["_drop", "date", "Rooms to rent", "People searching"]
@@ -275,10 +277,10 @@ def load_all_data(path):
     return hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los, sr, rep
 
 
-hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los, sr, rep = load_all_data(XLSX_PATH)
+hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los, sr, rep = load_all_data(XLSX_PATH) # Call  function to load all df at once, unpack them into individual variables to use in dashboard
 
-# ── Derived KPIs ──────────────────────────────────────────────────
-latest_rent      = hom["Greater London"].iloc[-1]
+# ── Derived KPIs ─────────────────────────────────────────
+latest_rent      = hom["Greater London"].iloc[-1]                                                                   #Choose what data to display in the KPI cards
 rent_date        = hom["Date"].iloc[-1].strftime("%b %Y")
 latest_listings  = int(rm_14d["14d"].iloc[-1])
 listings_date    = rm_14d["Date"].iloc[-1].strftime("%b %Y")
@@ -301,11 +303,11 @@ guar_pct         = guar[guar["ReqGuaRent"].isin([
     "Both"
 ])]["pct"].sum()
 
-ACT_DATE     = "2026-05-01"
+# ── Chart Reference Lines ────────────────────────────────────────────
+ACT_DATE     = "2026-05-01"                                                                                           #Key dates for RRA reference lines on charts
 ASSENT_DATE  = "2025-10-01"
 
-
-def _vline(fig, x, label, color, y_label=0.97):
+def _vline(fig, x, label, color, y_label=0.97):                                                                       #Helper function to add vertical reference lines to charts for key dates
     fig.add_shape(type="line", x0=x, x1=x, y0=0, y1=1,
                   xref="x", yref="paper",
                   line=dict(color=color, width=2, dash="dash"))
@@ -315,7 +317,7 @@ def _vline(fig, x, label, color, y_label=0.97):
                        bgcolor="rgba(255,255,255,0.7)", borderpad=2)
 
 
-def add_reference_lines_date(fig):
+def add_reference_lines_date(fig):                                                                       
     _vline(fig, ASSENT_DATE, "Royal Assent Oct 2025", C["grey"], y_label=0.97)
     _vline(fig, ACT_DATE,    "Act in force May 2026",  C["grey"], y_label=0.80)
 
@@ -339,7 +341,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-with st.expander("📋 Key legislative changes introduced by the Renters' Rights Act", expanded=False):
+with st.expander("📋 Key legislative changes introduced by the Renters' Rights Act", expanded=False):                                   #expandable text box
     st.markdown("""
     The Renters' Rights Act (RRA) is due to come into effect in **May 2026**, introducing the following key legislative changes:
 
@@ -353,7 +355,7 @@ with st.expander("📋 Key legislative changes introduced by the Renters' Rights
 
 eng_toggle = st.toggle("Show England / UK comparison", value=False)
 
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3 = st.tabs([                                                                                                            #set up tab structure for different section
     "📊 Market Monitoring — Quarterly / Monthly",
     "📋 Sector Context — Annual / One-off",
     "👥 Demographic Context"
@@ -365,20 +367,20 @@ tab1, tab2, tab3 = st.tabs([
 with tab1:
     st.markdown(
         "### Key Indicators &nbsp;"
-        "<span class='section-badge' style='background:#4477AA22;color:#4477AA;"
-        "border:1px solid #4477AA'>Regularly Updated</span>",
-        unsafe_allow_html=True
+        "<span class='section-badge' style='background:#4477AA22;color:#4477AA;"                                                        # badge to show regularly updated data
+        unsafe_allow_html=True 
     )
-
+    # Set up KPI cards in 3 columns, set out title of card, value, data source and date
     k1, k2, k3 = st.columns(3)
     for col, title, val, sub, accent in [
         (k1, "Avg. Asking Rent",       f"£{int(latest_rent):,}",  f"HomeLet — {rent_date}",       C["blue"]),
         (k2, "New Listings (14 days)", f"{latest_listings:,}",    f"Rightmove — {listings_date}", C["lightblue"]),
         (k3, "Annual Rent Change",     f"{latest_pipr:+.1f}%",    f"ONS PIPR — {pipr_date}",      C["green"]),
     ]:
+    #set up display and font size
         with col:
             st.markdown(f"""
-            <div class="kpi-card" style="border-left:4px solid {accent}">
+            <div class="kpi-card" style="border-left:4px solid {accent}">                                                              
               <div class="kpi-title">{title}</div>
               <div class="kpi-value">{val}</div>
               <div class="kpi-sub">{sub}</div>
@@ -576,7 +578,7 @@ with tab1:
         st.plotly_chart(fig_s21, use_container_width=True)
         
 
-
+    #reference notes in COMMENTARY above to insert text
     if COMMENTARY.get("homelessness_notes"):
         bullets = "".join(f"<li style='margin-bottom:6px'>{b}</li>" for b in COMMENTARY["homelessness_notes"])
         st.markdown(f"""
