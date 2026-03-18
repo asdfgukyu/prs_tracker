@@ -269,9 +269,11 @@ def load_all_data(path):
     # ── Repossession in London (MOJ) ──────────────────
     rep_df = xl["Repossessions"].iloc[7:].copy()
     rep = rep_df.iloc[7:].copy()
-    rep.columns = ["_drop", "Quarter", "Accelerated landlord", "Mortgage", "Private landlord", "Social landlord"]
+    rep.columns = ["_drop", "Quarter", "Accelerated landlord", "Mortgage", "Private landlord", "Social landlord",
+                "Accelerated landlord England", "Mortgage England", "Private landlord England", "Social landlord England" ]
     rep = rep.dropna(subset=["Quarter"]).reset_index(drop=True)
-    for c in ["Accelerated landlord", "Mortgage", "Private landlord", "Social landlord"]:
+    for c in ["Accelerated landlord", "Mortgage", "Private landlord", "Social landlord",
+               "Accelerated landlord England", "Mortgage England", "Private landlord England", "Social landlord England"]:
         rep[c] = pd.to_numeric(rep[c], errors="coerce").fillna(0)
 
     return hom, hom_change, rm_14d, rm_tracker, pipr, hp, rd, s21, rics, eviction_df, hz_prs, lt, pt, guar, hh, los, sr, rep
@@ -367,8 +369,9 @@ tab1, tab2, tab3 = st.tabs([                                                    
 with tab1:
     st.markdown(
         "### Key Indicators &nbsp;"
-        "<span class='section-badge' style='background:#4477AA22;color:#4477AA;"                                                        # badge to show regularly updated data
-        unsafe_allow_html=True 
+        "<span class='section-badge' style='background:#4477AA22;color:#4477AA;"
+        "border:1px solid #4477AA'>Regularly Updated</span>",
+        unsafe_allow_html=True
     )
     # Set up KPI cards in 3 columns, set out title of card, value, data source and date
     k1, k2, k3 = st.columns(3)
@@ -748,37 +751,42 @@ with tab2:
 
     with repossession:
         st.markdown("**Number of repossessions** — Ministry of Justice")
+        rep_plot = rep[rep["Quarter"].str[:4] >= "2019"].reset_index(drop=True)
         fig_rep = go.Figure()
-        rd_colors = [C["blue"], C["pink"], C["yellow"], C["green"]]
-        fig_rep.add_trace(go.Scatter(
-            x=rep["Quarter"], y=(rep["Accelerated landlord"]),
-            name="Accelerated landlord", line=dict(color=rd_colors[0], width=2),
-            mode="lines", marker=dict(size=6),
-            hovertemplate=f"%{{x}}: %{{y:.0f}}%<extra>Accelerated landlord</extra>"))
-        fig_rep.add_trace(go.Scatter(
-            x=rep["Quarter"], y=(rep["Mortgage"]),
-            name="Mortgage", line=dict(color=rd_colors[1], width=2),
-            mode="lines", marker=dict(size=6),
-            hovertemplate=f"%{{x}}: %{{y:.0f}}%<extra>Mortgage</extra>"))
-        fig_rep.add_trace(go.Scatter(
-            x=rep["Quarter"], y=(rep["Private landlord"]),
-            name="Private landlord", line=dict(color=rd_colors[2], width=2),
-            mode="lines", marker=dict(size=6),
-            hovertemplate=f"%{{x}}: %{{y:.0f}}%<extra>Private landlord</extra>"))
-        fig_rep.add_trace(go.Scatter(
-            x=rep["Quarter"], y=(rep["Social landlord"]),
-            name="Social landlord", line=dict(color=rd_colors[3], width=2),
-            mode="lines", marker=dict(size=6),
-            hovertemplate=f"%{{x}}: %{{y:.0f}}%<extra>Social landlord</extra>"))
+        rep_series = [
+            ("Accelerated landlord", C["blue"]),
+            ("Mortgage",             C["pink"]),
+            ("Private landlord",     C["yellow"]),
+            ("Social landlord",      C["green"]),
+        ]
+        for label, color in rep_series:
+            fig_rep.add_trace(go.Scatter(
+                x=rep_plot["Quarter"], y=rep_plot[label],
+                name=label,
+                legendgroup=label,
+                legendgrouptitle=dict(text="London", font=dict(size=10, color=C["navy"])) if label == "Accelerated landlord" else None,
+                line=dict(color=color, width=2),
+                mode="lines",
+                hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label} — London</extra>"))
+        if eng_toggle:
+            for label, color in rep_series:
+                eng_label = f"{label} England"
+                fig_rep.add_trace(go.Scatter(
+                    x=rep_plot["Quarter"], y=rep_plot[eng_label],
+                    name=f"{label} — England",
+                    legendgroup=label,
+                    line=dict(color=color, width=1.5, dash="dot"),
+                    mode="lines",
+                    hovertemplate=f"%{{x}}: %{{y:,.0f}}<extra>{label} — England</extra>"))
+        add_reference_lines_date(fig_rep)
         fig_rep.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor=C["white"], plot_bgcolor=C["white"],
-            yaxis=dict(ticksuffix="%", rangemode="tozero"),
-            legend=dict(font=dict(size=11), orientation="h",
+            yaxis=dict(rangemode="tozero"),
+            legend=dict(font=dict(size=10), orientation="h",
                 yanchor="bottom", y=1.02, xanchor="left", x=0))
         fig_rep.update_xaxes(showgrid=True, gridcolor=C["offwhite"])
         fig_rep.update_yaxes(showgrid=True, gridcolor=C["offwhite"])
         st.plotly_chart(fig_rep, use_container_width=True)
-
 
     col_pie, col_stay = st.columns([1, 2])
 
