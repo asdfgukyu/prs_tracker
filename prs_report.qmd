@@ -1,0 +1,853 @@
+---
+title: "London Private Rented Sector: Renters' Rights Act Impact Tracker"
+subtitle: "London focus | Updated quarterly"
+date: today
+date-format: "MMMM YYYY"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    toc: true
+    toc-depth: 1
+    toc-location: left
+    toc-title: "Contents"
+    theme: cosmo
+    embed-resources: true
+    include-in-header:
+      text: |
+        <style>
+          .plotly-graph-div, .js-plotly-plot { width: 100% !important; }
+          .panel-tabset .tab-content { overflow-x: hidden !important; }
+        </style>
+        <script>
+          document.addEventListener('shown.bs.tab', function() {
+            window.dispatchEvent(new Event('resize'));
+          });
+        </script>
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+knitr:
+  opts_chunk:
+    out.width: "100%"
+---
+
+```{r setup}
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(plotly)
+library(purrr)
+library(stringr)
+# rollmean replacement that doesn't require zoo (avoids as.Date masking issues)
+rollmean3 <- function(x) {
+  n <- length(x)
+  if (n < 3) return(rep(NA_real_, n))
+  out <- rep(NA_real_, n)
+  for (i in 2:(n-1)) out[i] <- mean(x[(i-1):(i+1)], na.rm = TRUE)
+  out
+}
+
+XLSX_PATH <- "PRS_Tracker.xlsx"
+
+C <- list(
+  black = "#000000", white = "#FFFFFF", navy = "#44546A",
+  offwhite = "#E7E6E6", blue = "#4477AA", pink = "#CC6677",
+  yellow = "#DDCC77", green = "#117733", lightblue = "#8EC8E7",
+  purple = "#AA4499", grey = "#AEAAAA"
+)
+
+ACT_DATE    <- "2026-05-01"
+ASSENT_DATE <- "2025-10-01"
+
+# Reference lines using ISO strings (works with plotly date axis)
+add_ref_lines <- function(fig) {
+  fig |> layout(
+    shapes = list(
+      list(type = "line", x0 = ASSENT_DATE, x1 = ASSENT_DATE,
+           y0 = 0, y1 = 1, yref = "paper", xref = "x",
+           line = list(color = C$grey, width = 2, dash = "dash")),
+      list(type = "line", x0 = ACT_DATE, x1 = ACT_DATE,
+           y0 = 0, y1 = 1, yref = "paper", xref = "x",
+           line = list(color = C$grey, width = 2, dash = "dash"))
+    ),
+    annotations = list(
+      list(x = ASSENT_DATE, y = 0.97, xref = "x", yref = "paper",
+           text = "Royal Assent Oct 2025", showarrow = FALSE,
+           xanchor = "left", yanchor = "top",
+           font = list(color = C$grey, size = 10),
+           bgcolor = "rgba(255,255,255,0.8)"),
+      list(x = ACT_DATE, y = 0.80, xref = "x", yref = "paper",
+           text = "Act in force May 2026", showarrow = FALSE,
+           xanchor = "left", yanchor = "top",
+           font = list(color = C$grey, size = 10),
+           bgcolor = "rgba(255,255,255,0.8)")
+    )
+  )
+}
+```
+
+```{r load_data}
+# Using col_names=FALSE + select() to avoid column count mismatches.
+# All sheets have a leading empty col (col 1 = drop, data starts col 2).
+# skip=N in R: skip N rows, next row is treated as col headers unless col_names=FALSE.
+
+# ── HomeLet: 6 cols, data from row 8 (skip=7 skips rows 1-7, row 8 = first data)
+hom <- read_excel(XLSX_PATH, sheet = "Homelet Rental Index", skip = 8, col_names = FALSE) |>
+  select(Date=1, UK=2, London=3, UK_chg=4, Lon_chg=5) |>
+  mutate(Date=base::as.Date(Date), London=as.numeric(London), UK=as.numeric(UK),
+         UK_chg=as.numeric(UK_chg)*100, Lon_chg=as.numeric(Lon_chg)*100) |>
+  filter(!is.na(Date), !is.na(London)) |> arrange(Date)
+hom_chg <- hom |> filter(!is.na(Lon_chg), Date >= "2019-01-01")
+
+# ── Rightmove 14-day: 7 cols, data from row 8
+rm_14d <- read_excel(XLSX_PATH, sheet = "Rental supply rightmove", skip = 8, col_names = FALSE) |>
+  select(Date=1, d14=5) |>
+  mutate(Date=base::as.Date(Date), d14=as.numeric(d14)) |>
+  filter(!is.na(Date), !is.na(d14)) |> arrange(Date)
+
+# ── ONS PIPR: 36 cols, col 2=Date, col 25=London, data from row 7
+pipr <- read_excel(XLSX_PATH, sheet = "PIPR Annual change", skip = 8, col_names = FALSE) |>
+  select(Date=1, London=24) |>
+  mutate(Date=base::as.Date(Date), London=as.numeric(London)) |>
+  filter(!is.na(Date), !is.na(London)) |> arrange(Date)
+
+# ── Prevention duty: 12 cols, data from row 8
+hp <- read_excel(XLSX_PATH, sheet = "Prevention duty by reason", skip = 8, col_names = FALSE) |>
+  select(Date=1, rent_arr=3, rent_inc=4, sell=5, relet=6,
+         retire=7, disrepair=8, illegal=9, abandoned=10, other=11) |>
+  mutate(Date=base::as.Date(Date),
+         across(rent_arr:other, ~ as.numeric(.x) |> replace_na(0)),
+         other_all = retire + abandoned + other,
+         Quarter = paste0(year(Date), " Q", quarter(Date))) |>
+  filter(!is.na(Date)) |> arrange(Date)
+
+# ── Relief duty: 12 cols, data from row 8
+rd <- read_excel(XLSX_PATH, sheet = "Relief duty by reason", skip = 8, col_names = FALSE) |>
+  select(Date=1, rent_arr=3, rent_inc=4, sell=5, relet=6,
+         retire=7, disrepair=8, illegal=9, abandoned=10, other=11) |>
+  mutate(Date=base::as.Date(Date),
+         across(rent_arr:other, ~ as.numeric(.x) |> replace_na(0)),
+         other_all = retire + abandoned + other,
+         Quarter = paste0(year(Date), " Q", quarter(Date))) |>
+  filter(!is.na(Date)) |> arrange(Date)
+
+# ── S21: 4 cols, data from row 8
+s21 <- read_excel(XLSX_PATH, sheet = "Prevention duty S21", skip = 8, col_names = FALSE) |>
+  select(Date=1, s21=3) |>
+  mutate(Date=base::as.Date(Date), s21=as.numeric(s21) |> replace_na(0),
+         Quarter=paste0(year(Date), " Q", quarter(Date))) |>
+  filter(!is.na(Date)) |> arrange(Date)
+
+# ── Rightmove tracker: 6 cols, data from row 7
+rm_tracker <- read_excel(XLSX_PATH, sheet = "Rightmove Rental Price Tracker", skip = 7, col_names = FALSE) |>
+  select(Quarter=1, London=2, Inner=3, Outer=4, GB=5) |>
+  filter(!is.na(Quarter), str_detect(as.character(Quarter), "^\\d{4} Q")) |>
+  mutate(across(London:GB, ~ as.numeric(.x) * 100),
+         yr=as.integer(str_sub(Quarter,1,4)), q=as.integer(str_sub(Quarter,-1)),
+         month=case_when(q==1~2,q==2~5,q==3~8,TRUE~11),
+         Date=base::as.Date(paste(yr,month,"01",sep="-")))
+
+# ── RICS: 6 cols, data from row 8 (two header rows: skip=7 skips 7, row 8 = data)
+rics <- read_excel(XLSX_PATH, sheet = "RICS rental sentiment", skip = 8, col_names = FALSE) |>
+  select(Quarter=1, demand_ew=2, demand_lon=3, instr_ew=4, instr_lon=5) |>
+  mutate(across(demand_ew:instr_lon, as.numeric)) |>
+  filter(!is.na(Quarter), suppressWarnings(as.integer(str_sub(as.character(Quarter),1,4))) >= 2019)
+
+# ── Households: 5 cols, data from row 8
+hh <- read_excel(XLSX_PATH, sheet = "Households in PRS", skip = 8, col_names = FALSE) |>
+  select(year=1, owners=2, social=3, prs=4) |>
+  mutate(year=as.integer(year), across(owners:prs, ~ as.numeric(.x)*100)) |>
+  filter(!is.na(year))
+
+# ── Category 1 hazard: 7 cols, data from row 7
+hz_prs <- read_excel(XLSX_PATH, sheet = "Category 1 hazard", skip = 7, col_names = FALSE) |>
+  select(year=1, tenure=3, rate=6) |>
+  mutate(year=as.integer(year), rate=as.numeric(rate)*100) |>
+  filter(!is.na(year), tenure == "Private rented")
+
+# ── Landlord type: 4 cols, data from row 7
+lt <- read_excel(XLSX_PATH, sheet = "Landlord type", skip = 7, col_names = FALSE) |>
+  select(Type=1, pct=3) |>
+  mutate(pct=as.numeric(pct)*100) |>
+  filter(!is.na(Type), !is.na(pct), is.character(Type)) |>
+  mutate(Type=c("Individual","Company","Both","Other")[seq_len(n())])
+
+# ── Portfolio size: 4 cols, data from row 7
+pt <- read_excel(XLSX_PATH, sheet = "Size of portfolio", skip = 7, col_names = FALSE) |>
+  select(Size=1, pct=3) |>
+  mutate(pct=as.numeric(pct)*100) |>
+  filter(!is.na(Size), !is.na(pct), is.character(Size)) |>
+  mutate(Size=c("1 property","2-4","5+","Other")[seq_len(n())])
+
+# ── Guarantor: 4 cols, data from row 7
+guar <- read_excel(XLSX_PATH, sheet = "Gaurantor EPLS", skip = 7, col_names = FALSE) |>
+  select(category=1, pct=3) |>
+  mutate(pct=as.numeric(pct)) |>
+  filter(!is.na(category), !is.na(pct), is.character(category))
+
+# ── Length of stay: 12 cols, data from row 8
+los <- read_excel(XLSX_PATH, sheet = "Length of stay", skip = 8, col_names = FALSE) |>
+  select(year=1, yr0_1=2, yr2=3, yr3_4=4, yr5_9=5, yr10p=6) |>
+  mutate(year=as.integer(year), across(yr0_1:yr10p, ~ as.numeric(.x)*100)) |>
+  filter(!is.na(year), str_detect(as.character(year), "^\\d{4}"))
+
+# ── Met Police: 7 cols, data from row 7
+ev_raw <- read_excel(XLSX_PATH, sheet = "Met Illegal eviction", skip = 7, col_names = FALSE) |>
+  select(Borough=1, y2019=2, y2020=3, y2021=4, y2022=5, y2023=6) |>
+  mutate(across(y2019:y2023, as.numeric)) |>
+  filter(!is.na(Borough), is.character(Borough))
+ev_total <- ev_raw |> filter(str_detect(Borough, regex("grand total|total", ignore_case=TRUE)))
+eviction_df <- tibble(Year=c("2019","2020","2021","2022","2023"),
+                      Cases=as.numeric(ev_total[1, 2:6]))
+
+# ── Spareroom: 4 cols, data from row 8
+sr <- read_excel(XLSX_PATH, sheet = "Spareroom Demand Supply", skip = 8, col_names = FALSE) |>
+  select(date=1, rooms=2, searchers=3) |>
+  mutate(
+    date = suppressWarnings(
+      ifelse(grepl("/", as.character(date)),
+             as.character(base::as.Date(as.character(date), format = "%m/%d/%Y")),
+             as.character(base::as.Date(as.numeric(as.character(date)),
+                                        origin = "1899-12-30")))
+    ),
+    date      = base::as.Date(date),
+    rooms     = as.numeric(rooms),
+    searchers = as.numeric(searchers)
+  ) |>
+  filter(!is.na(date)) |> arrange(date) |>
+  mutate(rooms_s=rollmean3(rooms),
+         searchers_s=rollmean3(searchers))
+
+# ── Citizens Advice trends ───────────────────────────────────────
+# Sheet: "Citizen advice trends"
+# skip=7: row 7 = header (Subject, Detail, Jan-Dec dates), row 8+ = data
+# After R drops leading empty col: col1=Subject, col2=Detail, cols3-14=months
+ca_header <- read_excel(XLSX_PATH, sheet = "Citizen advice trends",
+                        skip = 6, col_names = FALSE, n_max = 1)
+n_cols <- ncol(ca_header)
+ca_dates  <- {
+  raw <- unlist(select(ca_header, 3:n_cols))
+  if (is.numeric(raw)) {
+    base::as.Date(raw / 86400, origin = "1970-01-01")
+  } else {
+    base::as.Date(as.character(raw), format = "%d/%m/%Y")
+  }
+}
+
+ca_prs <- read_excel(XLSX_PATH, sheet = "Citizen advice trends",
+                     skip = 8, col_names = FALSE) |>
+  filter(!is.na(...1), str_detect(as.character(...1), "8 Private sector rented"))
+
+# Dynamically select detail col + all remaining value cols
+n_month_cols <- ncol(ca_prs) - 2  # subtract Subject and Detail cols
+ca_prs <- ca_prs |>
+  select(detail = 2, all_of(setNames(3:(2 + n_month_cols), 
+                                      paste0("v", seq_len(n_month_cols)))))
+
+# Name value columns with ISO date strings
+month_names <- format(ca_dates, "%Y-%m-%d")
+names(ca_prs)[2:ncol(ca_prs)] <- month_names[1:(ncol(ca_prs) - 1)]
+
+# Define groupings
+ca_groups <- list(
+  "Rent & Charges" = c(
+    "Rent increases", "Other charges and rent issues", "Letting agent charges",
+    "Water charges", "Tenant Fees", "Problems with letting agencies",
+    "Guarantor", "Cost of deposits / rent in advance",
+    "Lack of suitable or affordable alternatives"
+  ),
+  "Disrepair & Property Conditions" = c(
+    "Fitness for Human Habitation", "Disrepair - damp/mould/condensation",
+    "Disrepair/Maintenance - non damp/mould",
+    "Suitability of accommodation - excl overcrowding", "Suitability - Overcrowding",
+    "Annual gas safety check", "EPC rating below E", "No EPC rating",
+    "Adaptations for disabled people", "Improvement grants",
+    "District and communal heating systems"
+  ),
+  "Evictions & Possession" = c(
+    "Possession action (not arrears)", "Possession action with arrears",
+    "Possession/eviction - landlord mortgage", "Invalid notice", "Valid notice",
+    "Retaliatory evictions (disrepair)", "Retaliatory evictions (not disrepair)",
+    "Harassment by landlord", "Illegal eviction by landlord",
+    "Security of tenure", "Court costs", "Court representation"
+  ),
+  "Deposits" = c(
+    "Tenancy deposit protection", "Tenancy deposit return",
+    "Deposit replacement schemes/No deposit schemes", "Tenant Fees"
+  ),
+  "Tenancy Type & Agreements" = c(
+    "Tenancy agreements", "Assured shorthold tenant", "Assured tenant",
+    "Protected/regulated tenant", "Occupier with basic protection",
+    "Excluded occupier", "Trespasser", "Joint tenancy",
+    "Tenant notice requirements", "HMO (Houses in multiple occupation)"
+  ),
+  "Other" = c(
+    "Relationship breakdown", "Immigration issues",
+    "Not recorded/not applicable", "Other"
+  )
+)
+
+# Build grouped long-format dataframe
+ca_long <- purrr::map_dfr(names(ca_groups), function(grp) {
+  details <- ca_groups[[grp]]
+  ca_prs |>
+    filter(detail %in% details) |>
+    pivot_longer(-detail, names_to = "date", values_to = "n") |>
+    mutate(
+      n    = suppressWarnings(as.numeric(n)),
+      date = base::as.Date(date, format = "%Y-%m-%d"),
+      group = grp
+    ) |>
+    filter(!is.na(date), !is.na(n))
+}) |>
+  group_by(group, date) |>
+  summarise(n = sum(n, na.rm = TRUE), .groups = "drop")
+
+# ── Derived KPIs ──────────────────────────────────────────────────
+latest_rent   <- format(round(tail(hom$London, 1)), big.mark=",")
+rent_date     <- format(tail(hom$Date, 1), "%b %Y")
+latest_14d    <- format(round(tail(rm_14d$d14, 1)), big.mark=",")
+listings_date <- format(tail(rm_14d$Date, 1), "%b %Y")
+latest_pipr   <- round(tail(pipr$London, 1), 1)
+pipr_date     <- format(tail(pipr$Date, 1), "%b %Y")
+prs_share     <- round(tail(hh$prs, 1), 1)
+prs_year      <- tail(hh$year, 1)
+hz_rate       <- round(tail(hz_prs$rate, 1), 1)
+hz_year       <- tail(hz_prs$year, 1)
+eviction_n    <- tail(eviction_df$Cases, 1)
+eviction_yr   <- tail(eviction_df$Year, 1)
+guar_pct      <- round(guar |>
+  filter(category %in% c("A guarantor","Rent in advance, in addition to a deposit","Both")) |>
+  summarise(s=sum(pct,na.rm=TRUE)) |> pull(s) * 100, 0)
+```
+
+
+---
+
+::: {.callout-warning icon="false"}
+## ⚑ Renters' Rights Act
+Royal Assent granted **October 2025**. Act comes into force **May 2026**. Dashed reference lines mark both dates on time-series charts.
+:::
+
+::: {.callout-note icon="false" collapse="true"}
+## 📋 Key legislative changes
+
+The Renters' Rights Act (RRA) comes into effect in **May 2026**, introducing:
+
+- **Abolition of Section 21 'no fault' evictions** — landlords must provide a valid reason to evict.
+- **Abolition of Assured Shorthold Tenancies** — all tenancies become periodic.
+- **Extended protection periods** — longer notice required if landlord wishes to sell or move in.
+- **Rent increases limited to once per year**, in line with market rates.
+- **Prohibition on advance rent** — no more than one month upfront.
+- **PRS Decent Homes Standard** — minimum property condition requirements.
+:::
+
+---
+
+::: {.panel-tabset}
+
+## 📊 Market Monitoring
+
+```{r kpi_tab1}
+htmltools::div(
+  style = "display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px;",
+  htmltools::div(
+    style = paste0("flex:1; min-width:180px; background:", C$white,
+      "; border-left:4px solid ", C$blue,
+      "; border-radius:8px; padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.08);"),
+    htmltools::div(style = "font-size:11px; font-weight:600; color:#44546A; text-transform:uppercase;",
+                   "Avg. Asking Rent"),
+    htmltools::div(style = "font-size:28px; font-weight:700;", paste0("£", latest_rent)),
+    htmltools::div(style = "font-size:11px; color:#888;", paste("HomeLet —", rent_date))
+  ),
+  htmltools::div(
+    style = paste0("flex:1; min-width:180px; background:", C$white,
+      "; border-left:4px solid ", C$lightblue,
+      "; border-radius:8px; padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.08);"),
+    htmltools::div(style = "font-size:11px; font-weight:600; color:#44546A; text-transform:uppercase;",
+                   "New Listings (14 days)"),
+    htmltools::div(style = "font-size:28px; font-weight:700;", latest_14d),
+    htmltools::div(style = "font-size:11px; color:#888;", paste("Rightmove —", listings_date))
+  ),
+  htmltools::div(
+    style = paste0("flex:1; min-width:180px; background:", C$white,
+      "; border-left:4px solid ", C$green,
+      "; border-radius:8px; padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.08);"),
+    htmltools::div(style = "font-size:11px; font-weight:600; color:#44546A; text-transform:uppercase;",
+                   "Annual Rent Change"),
+    htmltools::div(style = "font-size:28px; font-weight:700;",
+                   paste0(ifelse(latest_pipr >= 0, "+", ""), latest_pipr, "%")),
+    htmltools::div(style = "font-size:11px; color:#888;", paste("ONS PIPR —", pipr_date))
+  )
+)
+```
+
+### Rental Price Indexes
+
+Three complementary measures of private rent change in London are tracked here. Each covers a different slice of the market:
+
+- **ONS Price Index of Private Rents (PIPR)** is the official measure, covering both new and existing tenancies including renewals. It tends to lag the market as it includes long-standing tenancies where rents have not recently changed.
+- **HomeLet Rental Index** tracks agreed rents on new tenancies — a leading indicator that typically moves first.
+- **Rightmove Rental Price Tracker** captures asking rents on newly listed properties, sitting between the two in coverage and lag.
+
+Together these give a fuller picture than any single index. Divergence between them often reflects methodology rather than conflicting signals.
+
+```{r rpi_chart}
+pipr_f <- pipr  |> filter(Date >= "2023-01-01")
+hom_f  <- hom_chg |> filter(Date >= "2023-01-01")
+rm_f   <- rm_tracker |> filter(yr >= 2023)
+
+plot_ly(width = NULL) |>
+  add_trace(data = pipr_f, x = ~Date, y = ~London,
+            type = "scatter", mode = "lines", name = "London",
+            legendgroup = "ons", legendgrouptitle = list(text = "ONS PIPR"),
+            line = list(color = C$pink, width = 2),
+            hovertemplate = "%{x|%b %Y}: %{y:.1f}%<extra>ONS PIPR</extra>") |>
+  add_trace(data = rm_f, x = ~Date, y = ~London,
+            type = "scatter", mode = "lines", name = "London",
+            legendgroup = "rm", legendgrouptitle = list(text = "Rightmove"),
+            line = list(color = C$blue, width = 2, dash = "dot"),
+            hovertemplate = "%{x|%b %Y}: %{y:.1f}%<extra>Rightmove London</extra>") |>
+  add_trace(data = rm_f, x = ~Date, y = ~Inner,
+            type = "scatter", mode = "lines", name = "Inner London",
+            legendgroup = "rm",
+            line = list(color = C$purple, width = 1.5, dash = "dot"),
+            hovertemplate = "%{x|%b %Y}: %{y:.1f}%<extra>Rightmove Inner London</extra>") |>
+  add_trace(data = rm_f, x = ~Date, y = ~Outer,
+            type = "scatter", mode = "lines", name = "Outer London",
+            legendgroup = "rm",
+            line = list(color = C$yellow, width = 1.5, dash = "dot"),
+            hovertemplate = "%{x|%b %Y}: %{y:.1f}%<extra>Rightmove Outer London</extra>") |>
+  add_trace(data = hom_f, x = ~Date, y = ~Lon_chg,
+            type = "scatter", mode = "lines", name = "London",
+            legendgroup = "hom", legendgrouptitle = list(text = "HomeLet"),
+            line = list(color = C$green, width = 2, dash = "dash"),
+            hovertemplate = "%{x|%b %Y}: %{y:.1f}%<extra>HomeLet</extra>") |>
+  add_ref_lines() |>
+  layout(
+    height = 480, autosize = TRUE,
+    paper_bgcolor = C$white, plot_bgcolor = C$white,
+    margin = list(l = 50, r = 20, t = 100, b = 40),
+    yaxis = list(ticksuffix = "%", showgrid = TRUE, gridcolor = C$offwhite, title = ""),
+    xaxis = list(showgrid = TRUE, gridcolor = C$offwhite, title = ""),
+    legend = list(orientation = "h", y = 1.15, x = 0,
+                  font = list(size = 11), tracegroupgap = 8),
+    shapes = c(
+      list(list(type = "line",
+                x0 = format(min(pipr_f$Date), "%Y-%m-%d"),
+                x1 = format(max(pipr_f$Date), "%Y-%m-%d"),
+                y0 = 0, y1 = 0, xref = "x", yref = "y",
+                line = list(color = C$black, width = 1)))
+    )
+  ) |>
+  config(responsive = TRUE, displayModeBar = FALSE)
+```
+
+> **Tip:** Click a legend group title to show/hide all traces in that group. Double-click a trace name to isolate it.
+
+
+---
+
+### Homelessness
+
+The MHCLG Homelessness statistics track households owed duties under the Homelessness Reduction Act 2017. **Prevention duty** is owed when a household is threatened with homelessness within 56 days; **Relief duty** when already homeless.
+
+```{r homelessness}
+#| layout-ncol: 3
+hp_cols   <- c("rent_arr","sell","relet","disrepair","illegal","other_all")
+hp_labels <- c("Rent arrears","Landlord selling","Landlord re-letting",
+                "Disrepair complaint","Illegal eviction","Other/retired/abandoned")
+hp_colors <- c(C$blue, C$purple, C$lightblue, C$yellow, C$pink, C$grey)
+
+make_duty_chart <- function(data, title) {
+  fig <- plot_ly(width = NULL)
+  for (i in seq_along(hp_cols)) {
+    fig <- fig |> add_trace(
+      data = data, x = ~Quarter, y = as.formula(paste0("~", hp_cols[i])),
+      type = "bar", name = hp_labels[i],
+      marker = list(color = hp_colors[i]),
+      visible = if (hp_cols[i] == "other_all") "legendonly" else TRUE,
+      hovertemplate = paste0("%{x}: %{y:,}<extra>", hp_labels[i], "</extra>")
+    )
+  }
+  fig |> layout(
+    barmode = "stack",
+    title = list(text = title, font = list(size = 12)),
+    height = 340, autosize = TRUE,
+    paper_bgcolor = C$white, plot_bgcolor = C$white,
+    margin = list(l = 40, r = 10, t = 40, b = 60),
+    xaxis = list(showgrid = FALSE, title = "", tickangle = 45),
+    yaxis = list(showgrid = TRUE, gridcolor = C$offwhite, title = "Households"),
+    legend = list(orientation = "v", x = 1.01, y = 1, font = list(size = 9))
+  ) |> config(responsive = TRUE,displayModeBar = FALSE)
+}
+
+make_duty_chart(hp, "<b>Prevention Duty by reason</b> — MHCLG Homelessness Statistics")
+make_duty_chart(rd, "<b>Relief Duty by reason</b> — MHCLG Homelessness Statistics") |>
+  layout(showlegend = TRUE)
+
+plot_ly(s21, x = ~Quarter, y = ~s21, width = NULL,
+        type = "bar", marker = list(color = C$pink),
+        hovertemplate = "%{x}: %{y:,}<extra>S21 cases</extra>") |>
+  layout(
+    title = list(text = "<b>Prevention Duty owed due to S21</b> — MHCLG Homelessness Statistics", font = list(size = 12)),
+    height = 340, autosize = TRUE, showlegend = FALSE,
+    paper_bgcolor = C$white, plot_bgcolor = C$white,
+    margin = list(l = 40, r = 10, t = 40, b = 60),
+    xaxis = list(showgrid = FALSE, title = "", tickangle = 45),
+    yaxis = list(showgrid = TRUE, gridcolor = C$offwhite, title = "Households")
+  ) |> config(responsive = TRUE, displayModeBar = FALSE)
+```
+
+
+<table style="width:100%; border:none; margin-top:-90px;">
+<tr style="vertical-align:top;">
+<td style="width:33%; padding-right:16px; border:none; font-size:0.9em;">
+Insert text.
+</td>
+<td style="width:33%; padding-right:16px; border:none; font-size:0.9em;">
+Insert text.
+</td>
+<td style="width:34%; border:none; font-size:0.9em;">
+Inser
+t text.
+</td>
+</tr>
+</table>
+
+
+
+---
+
+### RICS & Rental Supply
+
+```{r rics_supply}
+#| layout-ncol: 3
+#| fig-height: 4
+
+# RICS
+plot_ly(rics, width = NULL) |>
+  add_trace(x = ~Quarter, y = ~demand_lon, type = "scatter", mode = "lines",
+            name = "Tenant demand", line = list(color = C$blue, width = 2),
+            hovertemplate = "%{x}: %{y:.0f}<extra>Tenant demand</extra>") |>
+  add_trace(x = ~Quarter, y = ~instr_lon, type = "scatter", mode = "lines",
+            name = "Landlord instructions", line = list(color = C$pink, width = 2),
+            hovertemplate = "%{x}: %{y:.0f}<extra>Landlord instructions</extra>") |>
+  layout(
+    title = list(text = "<b>Tenant Demand & Landlord Instructions</b> — RICS UK Residential Market Survey", font = list(size = 12)),
+    height = 340, autosize = TRUE,
+    paper_bgcolor = C$white, plot_bgcolor = C$white,
+    margin = list(l = 40, r = 10, t = 40, b = 10),
+    xaxis = list(showgrid = TRUE, gridcolor = C$offwhite, tickangle = 45, title = ""),
+    yaxis = list(showgrid = TRUE, gridcolor = C$offwhite, title = "Net balance"),
+    legend = list(orientation = "h", y = 1.1, x = 0, font = list(size = 10)),
+    shapes = list(list(type = "line",
+                       x0 = rics$Quarter[1], x1 = tail(rics$Quarter, 1),
+                       y0 = 0, y1 = 0, xref = "x", yref = "y",
+                       line = list(color = C$black, width = 1)))
+  ) |> config(responsive = TRUE, displayModeBar = FALSE)
+
+# Rightmove 14-day
+plot_ly(rm_14d, x = ~Date, y = ~d14, width = NULL,
+        type = "scatter", mode = "lines",
+        line = list(color = C$green, width = 2),
+        hovertemplate = "%{x|%b %Y}: %{y:,}<extra>14-day listings</extra>") |>
+  add_ref_lines() |>
+  layout(
+    title = list(text = "<b>Rental listings added in the last 14 days</b> — Rightmove via GLA", font = list(size = 12)),
+    height = 340, autosize = TRUE, showlegend = FALSE,
+    paper_bgcolor = C$white, plot_bgcolor = C$white,
+    margin = list(l = 40, r = 10, t = 40, b = 10),
+    xaxis = list(showgrid = TRUE, gridcolor = C$offwhite, title = ""),
+    yaxis = list(showgrid = TRUE, gridcolor = C$offwhite, title = "Listings")
+  ) |> config(responsive = TRUE, displayModeBar = FALSE)
+
+# SpareRoom
+plot_ly(sr, width = NULL) |>
+  add_trace(x = ~date, y = ~rooms_s, type = "scatter", mode = "lines",
+            name = "Rooms to rent", line = list(color = C$blue, width = 2),
+            hovertemplate = "%{x|%b %Y}: %{y:,}<extra>Rooms to rent</extra>") |>
+  add_trace(x = ~date, y = ~searchers_s, type = "scatter", mode = "lines",
+            name = "People searching", line = list(color = C$pink, width = 2),
+            hovertemplate = "%{x|%b %Y}: %{y:,}<extra>People searching</extra>") |>
+  add_ref_lines() |>
+  layout(
+    title = list(text = "<b>Supply of and demand for rooms in London</b> — SpareRoom via GLA", font = list(size = 12)),
+    height = 340, autosize = TRUE,
+    paper_bgcolor = C$white, plot_bgcolor = C$white,
+    margin = list(l = 40, r = 10, t = 40, b = 10),
+    xaxis = list(showgrid = TRUE, gridcolor = C$offwhite, title = ""),
+    yaxis = list(showgrid = TRUE, gridcolor = C$offwhite, title = ""),
+    legend = list(orientation = "h", y = 1.1, x = 0, font = list(size = 10))
+  ) |> config(responsive = TRUE, displayModeBar = FALSE)
+```
+
+<table style="width:100%; border:none; margin-top:-30px;">
+<tr style="vertical-align:top;">
+<td style="width:33%; padding-right:16px; border:none; font-size:0.9em;">
+Tenant demand strengthened in May 2026, while the number of landlords reporting new instructions continued to fall. With supply tightening and demand rising, near-term rent expectations have risen sharply.
+</td>
+<td style="width:33%; padding-right:16px; border:none; font-size:0.9em;">
+The number of properties newly listed on Rightmove has recovered steadily since the pandemic-era dip in supply. In the second half of 2025, reports emerged of landlords downsizing portfolios ahead of the Renters' Rights Act. Zoopla reported a 6% increase in rental supply across London in the year to December 2025 — one of the weakest of any English region — while nearly a third of homes listed for sale in London were former rentals, almost three times the share seen in the rest of the country.
+</td>
+<td style="width:34%; border:none; font-size:0.9em;">
+SpareRoom data for February 2026 showed available rooms in London flatshares running around 8% higher than a year earlier, while the number of people actively searching for rooms fell to near the lowest levels since 2021. This divergence between supply and demand signals a loosening in the flatshare market, though it sits alongside continued tightening in the wider private rented sector.
+</td>
+</tr>
+</table>
+
+### Citizens Advice — PRS Enquiries
+
+Citizens Advice data tracks the volume of enquiries received from private renters in London, grouped into six thematic categories. This provides a real-time signal of emerging issues in the sector. Click legend entries to show/hide groups.
+
+```{r ca_chart}
+ca_colors <- c(
+  "Rent & Charges"              = C$blue,
+  "Disrepair & Property Conditions" = C$pink,
+  "Evictions & Possession"      = C$yellow,
+  "Deposits"                    = C$green,
+  "Tenancy Type & Agreements"   = C$purple,
+  "Other"                       = C$grey
+)
+
+fig_ca <- plot_ly(width = NULL)
+for (grp in names(ca_colors)) {
+  d <- ca_long |> filter(group == grp)
+  fig_ca <- fig_ca |>
+    add_trace(data = d, x = ~date, y = ~n,
+              type = "scatter", mode = "lines+markers",
+              name = grp,
+              line = list(color = ca_colors[grp], width = 2),
+              marker = list(size = 5, color = ca_colors[grp]),
+              hovertemplate = paste0("%{x|%b %Y}: %{y:,}<extra>", grp, "</extra>"))
+}
+fig_ca |>
+  add_ref_lines() |>
+  layout(
+    height = 420, autosize = TRUE,
+    paper_bgcolor = C$white, plot_bgcolor = C$white,
+    margin = list(l = 50, r = 20, t = 30, b = 0),
+    xaxis = list(showgrid = TRUE, gridcolor = C$offwhite, title = ""),
+    yaxis = list(showgrid = TRUE, gridcolor = C$offwhite, title = "Number of enquiries"),
+    legend = list(orientation = "h", y = 1.12, x = 0, font = list(size = 11))
+  ) |>
+  config(responsive = TRUE, displayModeBar = FALSE)
+```
+
+
+- Disrepair and property conditions is consistently the largest category of PRS enquiries received by Citizens Advice in London, covering issues such as damp and mould, fitness for human habitation, and general maintenance failures. Enquiries in this category have remained high throughout 2025 and into 2026, reflecting persistent concerns about housing quality in the sector. The introduction of the PRS Decent Homes Standard under the Renters' Rights Act is a direct policy response to this pattern.
+- Tenancy type and agreements (covering questions about assured shorthold tenancies, HMOs, joint tenancies, and occupier rights) is the second largest category and has shown a notable uptick since Royal Assent in October 2025, likely reflecting tenants and landlords seeking clarity on how the transition to periodic tenancies will work in practice.
+- Evictions and possession enquiries, which include questions about valid and invalid notices, retaliatory eviction, harassment, illegal eviction, and court proceedings, have risen steadily since mid-2025. This is consistent with anecdotal reports of landlords issuing Section 21 notices ahead of abolition, and with the increase in S21 related prevention duty cases visible in the homelessness data above.
+- Rent and charges enquiries (rent increases, letting agent charges, tenant fees, and deposit costs) have remained broadly stable, though the category will be one to watch closely once the annual rent increase restrictions under the Act come fully into effect.
+- Deposits and tenancy agreements categories remain relatively low in volume but are worth monitoring as the new periodic tenancy framework and deposit rules bed in.
+
+---
+
+## 📋 Sector Context
+
+```{r kpi_tab2}
+htmltools::div(
+  style = "display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px;",
+  htmltools::div(
+    style = paste0("flex:1; min-width:180px; background:", C$white,
+      "; border-left:4px solid ", C$purple,
+      "; border-radius:8px; padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.08);"),
+    htmltools::div(style = "font-size:11px; font-weight:600; color:#44546A; text-transform:uppercase;", "PRS Share of Households"),
+    htmltools::div(style = "font-size:28px; font-weight:700;", paste0(prs_share, "%")),
+    htmltools::div(style = "font-size:11px; color:#888;", paste("EHS London —", prs_year))
+  ),
+  htmltools::div(
+    style = paste0("flex:1; min-width:180px; background:", C$white,
+      "; border-left:4px solid ", C$pink,
+      "; border-radius:8px; padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.08);"),
+    htmltools::div(style = "font-size:11px; font-weight:600; color:#44546A; text-transform:uppercase;", "Cat 1 Hazard (PRS)"),
+    htmltools::div(style = "font-size:28px; font-weight:700;", paste0(hz_rate, "%")),
+    htmltools::div(style = "font-size:11px; color:#888;", paste("EHS London —", hz_year))
+  ),
+  htmltools::div(
+    style = paste0("flex:1; min-width:180px; background:", C$white,
+      "; border-left:4px solid ", C$green,
+      "; border-radius:8px; padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.08);"),
+    htmltools::div(style = "font-size:11px; font-weight:600; color:#44546A; text-transform:uppercase;", "Guarantor/Advance Required"),
+    htmltools::div(style = "font-size:28px; font-weight:700;", paste0(guar_pct, "%")),
+    htmltools::div(style = "font-size:11px; color:#888;", "EPLS 2024 — London")
+  ),
+  htmltools::div(
+    style = paste0("flex:1; min-width:180px; background:", C$white,
+      "; border-left:4px solid ", C$yellow,
+      "; border-radius:8px; padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.08);"),
+    htmltools::div(style = "font-size:11px; font-weight:600; color:#44546A; text-transform:uppercase;", "Illegal Eviction Cases"),
+    htmltools::div(style = "font-size:28px; font-weight:700;", eviction_n),
+    htmltools::div(style = "font-size:11px; color:#888;", paste("Met Police FOI —", eviction_yr))
+  )
+)
+```
+
+### Housing Stock & Conditions
+
+The private rented sector is the fastest growing tenure in London. According to the English Housing Survey, the proportion of households in the PRS grew from around 22% in 2008 to `r prs_share`% in `r prs_year`. Owner occupation remains the largest tenure but has fallen steadily.
+
+```{r tenure_hz}
+#| layout-ncol: 2
+#| fig-height: 4
+plot_ly(hh, width = NULL) |>
+  add_trace(x = ~year, y = ~prs, type = "scatter", mode = "lines+markers",
+            name = "Private renters", line = list(color = C$purple, width = 2),
+            marker = list(size = 6, color = C$purple),
+            hovertemplate = "%{x}: %{y:.1f}%<extra>Private renters</extra>") |>
+  add_trace(x = ~year, y = ~social, type = "scatter", mode = "lines+markers",
+            name = "Social sector", line = list(color = C$green, width = 2),
+            marker = list(size = 6, color = C$green),
+            hovertemplate = "%{x}: %{y:.1f}%<extra>Social sector</extra>") |>
+  add_trace(x = ~year, y = ~owners, type = "scatter", mode = "lines+markers",
+            name = "Owner occupiers", line = list(color = C$blue, width = 2),
+            marker = list(size = 6, color = C$blue),
+            hovertemplate = "%{x}: %{y:.1f}%<extra>Owner occupiers</extra>") |>
+  layout(
+    title = list(text = "<b>Households by tenure (%)</b> — English Housing Survey, London", font = list(size = 12)),
+    height = 320, autosize = TRUE,
+    paper_bgcolor = C$white, plot_bgcolor = C$white,
+    margin = list(l = 50, r = 20, t = 100, b = 40),
+    xaxis = list(showgrid = TRUE, gridcolor = C$offwhite, title = ""),
+    yaxis = list(ticksuffix = "%", showgrid = TRUE, gridcolor = C$offwhite,
+                 rangemode = "tozero", title = ""),
+    legend = list(orientation = "h", y = 1.1, x = 0, font = list(size = 11))
+  ) |> config(responsive = TRUE, displayModeBar = FALSE)
+
+plot_ly(hz_prs, x = ~year, y = ~rate, width = NULL,
+        type = "scatter", mode = "lines+markers",
+        line = list(color = C$pink, width = 2), marker = list(size = 7, color = C$pink),
+        hovertemplate = "%{x}: %{y:.1f}%<extra>Cat 1 Hazard</extra>") |>
+  layout(
+    title = list(text = "<b>Category 1 hazards in the PRS (%)</b> — English Housing Survey, London", font = list(size = 12)),
+    height = 320, autosize = TRUE, showlegend = FALSE,
+    paper_bgcolor = C$white, plot_bgcolor = C$white,
+    margin = list(l = 50, r = 20, t = 100, b = 40),
+    xaxis = list(showgrid = TRUE, gridcolor = C$offwhite, title = ""),
+    yaxis = list(ticksuffix = "%", showgrid = TRUE, gridcolor = C$offwhite,
+                 rangemode = "tozero", title = "")
+  ) |> config(responsive = TRUE, displayModeBar = FALSE)
+```
+
+<table style="width:100%; border:none; margin-top:-30px;">
+<tr style="vertical-align:top;">
+<td style="width:33%; padding-right:16px; border:none; font-size:0.9em;">
+Household tenure trends have stayed relatively stable compared to the rapid changes in the 2000s, however the percentage of household privately renter in London has been steadily increasing. According to the 2023-24 English Housing Survey, nearly a third (32%) of homes in London were privately rented, significantly higher than the UK average of 19%.
+</td>
+<td style="width:33%; padding-right:16px; border:none; font-size:0.9em;">
+Change chart to include other tenures.
+</td>
+</tr>
+</table>
+
+### Landlord Profile
+
+```{r landlord_profile}
+#| layout-ncol: 3
+#| fig-height: 4
+
+plot_ly(lt, x = ~pct, y = ~Type, width = NULL,
+        type = "bar", orientation = "h",
+        marker = list(color = C$blue),
+        hovertemplate = "%{y}: %{x:.1f}%<extra></extra>") |>
+  layout(
+    title = list(text = "<b>Landlord type</b> — English Private Landlord Survey 2024", font = list(size = 12)),
+    height = 260, autosize = TRUE, showlegend = FALSE,
+    paper_bgcolor = C$white, plot_bgcolor = C$white,
+    margin = list(l = 100, r = 20, t = 100, b = 50),
+    xaxis = list(ticksuffix = "%", showgrid = TRUE, gridcolor = C$offwhite, title = ""),
+    yaxis = list(showgrid = FALSE, title = "")
+  ) |> config(responsive = TRUE, displayModeBar = FALSE)
+
+plot_ly(pt, x = ~pct, y = ~Size, width = NULL,
+        type = "bar", orientation = "h",
+        marker = list(color = C$purple),
+        hovertemplate = "%{y}: %{x:.1f}%<extra></extra>") |>
+  layout(
+    title = list(text = "<b>Portfolio size</b> — English Private Landlord Survey 2024", font = list(size = 12)),
+    height = 260, autosize = TRUE, showlegend = FALSE,
+    paper_bgcolor = C$white, plot_bgcolor = C$white,
+    margin = list(l = 100, r = 20, t = 100, b = 50),
+    xaxis = list(ticksuffix = "%", showgrid = TRUE, gridcolor = C$offwhite, title = ""),
+    yaxis = list(showgrid = FALSE, title = "")
+  ) |> config(responsive = TRUE, displayModeBar = FALSE)
+
+guar_plot <- guar |>
+  mutate(label = case_when(
+    category == "A guarantor"                               ~ "Guarantor",
+    category == "Rent in advance, in addition to a deposit" ~ "Rent advance",
+    category == "Both"                                      ~ "Both",
+    category == "Neither"                                   ~ "Neither",
+    TRUE                                                    ~ "Don't know"
+  ))
+plot_ly(guar_plot, labels = ~label, values = ~(pct * 100),
+        width = NULL, type = "pie", hole = 0.35,
+        marker = list(colors = c(C$green, C$blue, C$pink, C$yellow, C$lightblue),
+                      line = list(color = C$white, width = 2)),
+        textposition = "outside",              
+        textinfo = "label+percent",
+        hovertemplate = "%{label}: %{value:.1f}%<extra></extra>") |>
+  layout(
+    title = list(text = "<b>Guarantor or advance rent required</b><br><sup> — English Private Landlord Survey 2024", font = list(size = 12)),
+    height = 300, autosize = TRUE, showlegend = FALSE,
+    paper_bgcolor = C$white, margin = list(l = 20, r = 20, t = 70, b = 50)
+  ) |> config(responsive = TRUE, displayModeBar = FALSE)
+```
+
+<table style="width:100%; border:none; margin-top:-70px;">
+<tr style="vertical-align:top;">
+<td style="width:33%; padding-right:16px; border:none; font-size:0.9em;">
+The vast majority of private landlords in London are individual landlords, accounting for around 84% of the sector. Company landlords make up a small but growing share, with the remainder split between those operating under both structures and other arrangements. This concentration of individual landlords is significant in the context of the Renters' Rights Act, as many may lack the resources and professional infrastructure of institutional investors to absorb the compliance costs of the new regime.
+</td>
+<td style="width:33%; padding-right:16px; border:none; font-size:0.9em;">
+Most London landlords operate at a small scale, around 43% own just a single property, and a further 31% own between two and four. Only around 24% hold five or more properties. This small-scale ownership profile means the sector is highly sensitive to changes in taxation, regulation, and financing costs, as individual landlords have limited ability to spread risk across a larger portfolio.
+</td>
+<td style="width:34%; border:none; font-size:0.9em;">
+Around 57% of London landlords required either a guarantor, rent in advance, or both when letting their property, compared to 40% who required neither. This suggests that access barriers remain significant for many prospective tenants, particularly younger renters, those on lower incomes, and those without established rental histories. The Renters' Rights Act does not directly restrict the use of guarantors, though the prohibition on multiple months of advance rent will limit one avenue landlords have used to manage perceived risk.
+</td>
+</tr>
+</table>
+
+
+
+### Length of Stay
+
+```{r los}
+los_long <- los |>
+  pivot_longer(-year, names_to = "band", values_to = "pct") |>
+  mutate(band = factor(band,
+    levels = c("yr0_1","yr2","yr3_4","yr5_9","yr10p"),
+    labels = c("0–1 yr","2 yrs","3–4 yrs","5–9 yrs","10+ yrs")))
+
+bands  <- levels(los_long$band)
+colors <- c(C$blue, C$lightblue, C$green, C$yellow, C$pink)
+fig_los <- plot_ly(width = NULL)
+for (i in seq_along(bands)) {
+  fig_los <- fig_los |>
+    add_trace(data = filter(los_long, band == bands[i]),
+              x = ~year, y = ~pct, type = "bar", name = bands[i],
+              marker = list(color = colors[i]),
+              hovertemplate = paste0("%{x}: %{y:.1f}%<extra>", bands[i], "</extra>"))
+}
+fig_los |>
+  layout(
+    barmode = "stack",
+    title = list(text = "<b>Length of current stay — private renters (%)</b> — English Housing Survey, London", font = list(size = 12)),
+    height = 340, autosize = TRUE,
+    paper_bgcolor = C$white, plot_bgcolor = C$white,
+    margin = list(l = 50, r = 20, t = 100, b = 40),
+    xaxis = list(showgrid = FALSE, title = ""),
+    yaxis = list(ticksuffix = "%", range = c(0, 100),
+                 showgrid = TRUE, gridcolor = C$offwhite, title = ""),
+    legend = list(orientation = "h", y = 1.1, x = 0, font = list(size = 11))
+  ) |> config(responsive = TRUE,displayModeBar = FALSE)
+```
+
+:::
+
+
+*For queries contact [EMAIL].*
