@@ -505,7 +505,7 @@ plot_ly(s21, x = ~Quarter, y = ~s21, width = NULL,
 ```
 
 
-<table style="width:100%; border:none; margin-top:-90px;">
+<table style="width:100%; border:none; margin-top:-50px;">
 <tr style="vertical-align:top;">
 <td style="width:33%; padding-right:16px; border:none; font-size:0.9em;">
 Insert text.
@@ -759,7 +759,7 @@ plot_ly(lt, x = ~pct, y = ~Type, width = NULL,
     title = list(text = "<b>Landlord type</b> — English Private Landlord Survey 2024", font = list(size = 12)),
     height = 260, autosize = TRUE, showlegend = FALSE,
     paper_bgcolor = C$white, plot_bgcolor = C$white,
-    margin = list(l = 100, r = 20, t = 100, b = 50),
+    margin = list(l = 100, r = 0, t = 100, b = 40),
     xaxis = list(ticksuffix = "%", showgrid = TRUE, gridcolor = C$offwhite, title = ""),
     yaxis = list(showgrid = FALSE, title = "")
   ) |> config(responsive = TRUE, displayModeBar = FALSE)
@@ -772,9 +772,9 @@ plot_ly(pt, x = ~pct, y = ~Size, width = NULL,
     title = list(text = "<b>Portfolio size</b> — English Private Landlord Survey 2024", font = list(size = 12)),
     height = 260, autosize = TRUE, showlegend = FALSE,
     paper_bgcolor = C$white, plot_bgcolor = C$white,
-    margin = list(l = 100, r = 20, t = 100, b = 50),
+    margin = list(l = 100, r = 20, t = 100, b = 40),
     xaxis = list(ticksuffix = "%", showgrid = TRUE, gridcolor = C$offwhite, title = ""),
-    yaxis = list(showgrid = FALSE, title = "")
+    yaxis = list(showgrid = FALSE, title = "", automargin = TRUE)
   ) |> config(responsive = TRUE, displayModeBar = FALSE)
 
 guar_plot <- guar |>
