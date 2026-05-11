@@ -586,7 +586,7 @@ plot_ly(sr, width = NULL) |>
   ) |> config(responsive = TRUE, displayModeBar = FALSE)
 ```
 
-<table style="width:100%; border:none; margin-top:-30px;">
+<table style="width:100%; border:none; margin-top:-20px;">
 <tr style="vertical-align:top;">
 <td style="width:33%; padding-right:16px; border:none; font-size:0.9em;">
 Tenant demand strengthened in May 2026, while the number of landlords reporting new instructions continued to fall. With supply tightening and demand rising, near-term rent expectations have risen sharply.
