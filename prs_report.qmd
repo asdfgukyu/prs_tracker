@@ -390,9 +390,9 @@ htmltools::div(
 
 Three complementary measures of private rent change in London are tracked here. Each covers a different slice of the market:
 
-- **ONS Price Index of Private Rents (PIPR)** is the official measure, covering both new and existing tenancies including renewals. It tends to lag the market as it includes long-standing tenancies where rents have not recently changed.
+- **ONS Price Index of Private Rents (PIPR)** is the official measure and reflects the trend across the sector, covering both new and existing tenancies including renewals 
 - **HomeLet Rental Index** tracks agreed rents on new tenancies — a leading indicator that typically moves first.
-- **Rightmove Rental Price Tracker** captures asking rents on newly listed properties, sitting between the two in coverage and lag.
+- **Rightmove Rental Price Tracker** is published quarterly and captures asking rents on newly listed properties, which does not always translate to agreed rents.
 
 Together these give a fuller picture than any single index. Divergence between them often reflects methodology rather than conflicting signals.
 
@@ -592,7 +592,7 @@ plot_ly(sr, width = NULL) |>
 Tenant demand strengthened in May 2026, while the number of landlords reporting new instructions continued to fall. With supply tightening and demand rising, near-term rent expectations have risen sharply.
 </td>
 <td style="width:33%; padding-right:16px; border:none; font-size:0.9em;">
-The number of properties newly listed on Rightmove has recovered steadily since the pandemic-era dip in supply. In the second half of 2025, reports emerged of landlords downsizing portfolios ahead of the Renters' Rights Act. Zoopla reported a 6% increase in rental supply across London in the year to December 2025 — one of the weakest of any English region — while nearly a third of homes listed for sale in London were former rentals, almost three times the share seen in the rest of the country.
+The number of properties newly listed on Rightmove has recovered steadily since the pandemic-era dip in supply.  
 </td>
 <td style="width:34%; border:none; font-size:0.9em;">
 SpareRoom data for February 2026 showed available rooms in London flatshares running around 8% higher than a year earlier, while the number of people actively searching for rooms fell to near the lowest levels since 2021. This divergence between supply and demand signals a loosening in the flatshare market, though it sits alongside continued tightening in the wider private rented sector.
@@ -639,8 +639,8 @@ fig_ca |>
 ```
 
 
-- Disrepair and property conditions is consistently the largest category of PRS enquiries received by Citizens Advice in London, covering issues such as damp and mould, fitness for human habitation, and general maintenance failures. Enquiries in this category have remained high throughout 2025 and into 2026, reflecting persistent concerns about housing quality in the sector. The introduction of the PRS Decent Homes Standard under the Renters' Rights Act is a direct policy response to this pattern.
-- Tenancy type and agreements (covering questions about assured shorthold tenancies, HMOs, joint tenancies, and occupier rights) is the second largest category and has shown a notable uptick since Royal Assent in October 2025, likely reflecting tenants and landlords seeking clarity on how the transition to periodic tenancies will work in practice.
+- Disrepair and property conditions is one of the largest categories of PRS enquiries received by Citizens Advice in London, covering issues such as damp and mould, fitness for human habitation, and general maintenance failures. Enquiries in this category have remained high throughout 2025 and into 2026, reflecting persistent concerns about housing quality in the sector. The introduction of the PRS Decent Homes Standard under the Renters' Rights Act is a direct policy response to this pattern.
+- Tenancy type and agreements (covering questions about assured shorthold tenancies, HMOs, joint tenancies, and occupier rights) is now the largest category of enquiries, and has shown a notable uptick since Royal Assent in October 2025, likely reflecting tenants and landlords seeking clarity on how the transition to periodic tenancies will work in practice.
 - Evictions and possession enquiries, which include questions about valid and invalid notices, retaliatory eviction, harassment, illegal eviction, and court proceedings, have risen steadily since mid-2025. This is consistent with anecdotal reports of landlords issuing Section 21 notices ahead of abolition, and with the increase in S21 related prevention duty cases visible in the homelessness data above.
 - Rent and charges enquiries (rent increases, letting agent charges, tenant fees, and deposit costs) have remained broadly stable, though the category will be one to watch closely once the annual rent increase restrictions under the Act come fully into effect.
 - Deposits and tenancy agreements categories remain relatively low in volume but are worth monitoring as the new periodic tenancy framework and deposit rules bed in.
